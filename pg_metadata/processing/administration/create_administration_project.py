@@ -138,6 +138,10 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         # Replace the database connection information
         file_data = file_data.replace("service='pgmetadata'", connection.uri())
 
+        # Replace the database connection information
+        file_data = file_data.replace('label_@LANG@', 'label_de')
+        file_data = file_data.replace('description_@LANG@', 'description_de')
+
         with open(project_file, 'w') as fout:
             fout.write(file_data)
 
