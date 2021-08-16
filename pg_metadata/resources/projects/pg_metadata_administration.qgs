@@ -2175,7 +2175,7 @@ def my_form_open(dialog, layer, feature):
                 <Option name="NofColumns" type="int" value="1"></Option>
                 <Option name="OrderByValue" type="bool" value="true"></Option>
                 <Option name="UseCompleter" type="bool" value="false"></Option>
-                <Option name="Value" type="QString" value="label_@LANG@"></Option>
+                <Option name="Value" type="QString" value="label_en"></Option>
               </Option>
             </config>
           </editWidget>
@@ -2225,7 +2225,7 @@ def my_form_open(dialog, layer, feature):
                 <Option name="NofColumns" type="int" value="1"></Option>
                 <Option name="OrderByValue" type="bool" value="false"></Option>
                 <Option name="UseCompleter" type="bool" value="false"></Option>
-                <Option name="Value" type="QString" value="label_@LANG@"></Option>
+                <Option name="Value" type="QString" value="label_en"></Option>
               </Option>
             </config>
           </editWidget>
