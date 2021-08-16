@@ -7,6 +7,7 @@ from qgis.core import (
     Qgis,
     QgsProcessingParameterFileDestination,
     QgsProcessingParameterString,
+    QgsProcessingParameterEnum,
     QgsProviderRegistry,
 )
 
@@ -27,7 +28,11 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
 
     CONNECTION_NAME = 'CONNECTION_NAME'
     PROJECT_FILE = 'PROJECT_FILE'
-
+    
+    PROJECT_LANG = 'PROJECT_LANG'
+    LANG_CODES = ['en', 'fr', 'it', 'es', 'de']
+    LANGUAGES = [tr('English'), tr('French'), tr('Italian'), tr('Spanish'), tr('German')]
+    
     OUTPUT_STATUS = 'OUTPUT_STATUS'
     OUTPUT_STRING = 'OUTPUT_STRING'
 
@@ -105,6 +110,20 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         else:
             param.tooltip_3liz = tooltip
         self.addParameter(param)
+        
+        # target project language
+        param = QgsProcessingParameterEnum(
+            self.PROJECT_LANG,
+            tr('Language for the metadata terms (glossary)'),
+            options=self.LANGUAGES,
+            defaultValue=0, optional=False)
+        tooltip = tr('The language for the metadata terms (glossary).')
+        if Qgis.QGIS_VERSION_INT >= 31600:
+            param.setHelp(tooltip)
+        else:
+            param.tooltip_3liz = tooltip
+        self.addParameter(param)
+        
 
     def checkParameterValues(self, parameters, context):
 
@@ -138,9 +157,10 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         # Replace the database connection information
         file_data = file_data.replace("service='pgmetadata'", connection.uri())
 
-        # Replace the database connection information
-        file_data = file_data.replace('label_@LANG@', 'label_de')
-        file_data = file_data.replace('description_@LANG@', 'description_de')
+        # Replace the glossary language placeholder
+        lang = self.LANG_CODES[self.parameterAsEnum(parameters, self.PROJECT_LANG, context)]
+        file_data = file_data.replace('label_@LANG@', f'label_{lang}')
+        file_data = file_data.replace('description_@LANG@', f'description_{lang}')
 
         with open(project_file, 'w') as fout:
             fout.write(file_data)
