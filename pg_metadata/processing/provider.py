@@ -22,6 +22,8 @@ from pg_metadata.processing.database.reset_html_template import (
 from pg_metadata.processing.database.upgrade import UpgradeDatabaseStructure
 from pg_metadata.qgis_plugin_tools.tools.resources import resources_path
 
+from pg_metadata.processing.user.add_theme_layers import AddThemeLayers
+
 
 class PgMetadataProvider(QgsProcessingProvider):
 
@@ -42,6 +44,9 @@ class PgMetadataProvider(QgsProcessingProvider):
         self.addAlgorithm(RecomputeValues())
         self.addAlgorithm(ResetHtmlTemplate())
         self.addAlgorithm(UpgradeDatabaseStructure())
+        
+        # User
+        self.addAlgorithm(AddThemeLayers())
 
     def id(self):  # NOQA
         return "pg_metadata"
