@@ -404,6 +404,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         sql += " INNER JOIN pgmetadata.v_valid_dataset v"
         sql += " ON concat(v.table_name, '.', v.schema_name) = concat(d.table_name, '.', d.schema_name)"
         sql += " WHERE '{}' = any (themes)".format(theme_id)
+        sql += "  and keywords not like '%VERALTET%' and keywords not like '%OBSOLETE%'"
 
         try:
             layers = connection.executeSql(sql)
