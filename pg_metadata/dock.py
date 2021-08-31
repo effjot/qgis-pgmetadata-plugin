@@ -396,8 +396,8 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         theme = dialog.textValue()    
         theme_id = available_themes[theme]
         
-        iface.messageBar().pushMessage(tr("Loading theme “{}”").format(theme),
-                                       level=Qgis.Info)
+        #Loading is quite fast, so message after loading should be enough
+        #iface.messageBar().pushMessage(tr("Loading theme “{}”").format(theme), level=Qgis.Info)
         
         sql = "  SELECT d.schema_name, d.table_name"
         sql += " FROM pgmetadata.dataset d"
@@ -416,7 +416,8 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                                            level=Qgis.Warning)
             return
         
-        #n_layers = len(layers)
+        root = QgsProject.instance().layerTreeRoot()
+        theme_group = root.addGroup(tr("Theme {}").format(theme))
                 
         for layer in layers:
                         
@@ -447,7 +448,12 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             vlayer = QgsVectorLayer(uri.uri(), table_name, 'postgres')
             # Maybe there is a default style, you should load it
             vlayer.loadDefaultStyle()
-            QgsProject.instance().addMapLayer(vlayer)
+            QgsProject.instance().addMapLayer(vlayer, False)
+            theme_group.addLayer(vlayer)
+            
+        iface.messageBar().pushMessage(tr("{n} layers from theme “{theme}” added").format(n=len(layers),
+                                                                                          theme=theme),
+                                       level=Qgis.Info)
 
     @staticmethod
     def open_external_help():
