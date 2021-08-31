@@ -9,8 +9,14 @@ import processing
 
 from qgis.core import (
     Qgis,
+    QgsDataSourceUri,
+    QgsProject,
+    QgsVectorLayer,
     QgsProcessingException,
     QgsProcessingOutputString,
+    QgsProcessingOutputMultipleLayers,
+    QgsProcessingOutputVectorLayer,
+    QgsProcessingContext,
     QgsProcessingParameterBoolean,
     QgsProcessingParameterString,
     QgsProviderConnectionException,
@@ -40,10 +46,9 @@ class AddThemeLayers(BaseProcessingAlgorithm):
     """
 
     CONNECTION_NAME = "CONNECTION_NAME"
-    OVERRIDE = "OVERRIDE"
-    DATABASE_VERSION = "DATABASE_VERSION"
     THEME = "THEME"
-
+    OUTPUT = "OUTPUT"
+    
     def name(self):
         return "add_theme_layers"
 
@@ -100,27 +105,23 @@ class AddThemeLayers(BaseProcessingAlgorithm):
             param.tooltip_3liz = tooltip
         self.addParameter(param)
 
-        # param = QgsProcessingParameterBoolean(
-        #     self.OVERRIDE,
-        #     tr("Erase the schema {} ?").format(SCHEMA),
-        #     defaultValue=False,
-        # )
-        # tooltip = tr("** Be careful ** This will remove data in the schema !")
-        # if Qgis.QGIS_VERSION_INT >= 31600:
-        #     param.setHelp(tooltip)
-        # else:
-        #     param.tooltip_3liz = tooltip
-        # self.addParameter(param)
-
         param = QgsProcessingParameterString(
             self.THEME,
             tr("Theme to add")
         )
         self.addParameter(param)
-        
+
+        # Output is set of layers
         self.addOutput(
-            QgsProcessingOutputString(self.DATABASE_VERSION, tr("Database version"))
+            #QgsProcessingOutputMultipleLayers(
+            QgsProcessingOutputVectorLayer(
+                self.OUTPUT,
+                tr("Resulting layers"),
+                #type=QgsProcessing.TypeVectorAnyGeometry
+            )
         )
+        #self.addParameter(param)
+
 
     def checkParameterValues(self, parameters, context):
         if Qgis.QGIS_VERSION_INT >= 31400:
@@ -156,99 +157,6 @@ class AddThemeLayers(BaseProcessingAlgorithm):
 
         theme_id = self.parameterAsString(parameters, self.THEME, context)
         
-        # # Drop schema if needed
-        # override = self.parameterAsBool(parameters, self.OVERRIDE, context)
-        # if override and SCHEMA in connection.schemas():
-        #     feedback.pushInfo(tr("Removing the schema {}…").format(SCHEMA))
-        #     try:
-        #         connection.dropSchema(SCHEMA, True)
-        #     except QgsProviderConnectionException as e:
-        #         raise QgsProcessingException(str(e))
-
-        # # Create full structure
-        # sql_files = [
-        #     "00_initialize_database.sql",
-        #     "{}/10_FUNCTION.sql".format(SCHEMA),
-        #     "{}/20_TABLE_SEQUENCE_DEFAULT.sql".format(SCHEMA),
-        #     "{}/30_VIEW.sql".format(SCHEMA),
-        #     "{}/40_INDEX.sql".format(SCHEMA),
-        #     "{}/50_TRIGGER.sql".format(SCHEMA),
-        #     "{}/60_CONSTRAINT.sql".format(SCHEMA),
-        #     "{}/70_COMMENT.sql".format(SCHEMA),
-        #     "{}/90_GLOSSARY.sql".format(SCHEMA),
-        #     "99_finalize_database.sql",
-        # ]
-
-        # plugin_dir = plugin_path()
-        # plugin_version = version()
-        # dev_version = False
-        # run_migration = os.environ.get(
-        #     "TEST_DATABASE_INSTALL_{}".format(SCHEMA.upper())
-        # )
-        # if plugin_version in ["master", "dev"] and not run_migration:
-        #     feedback.reportError(
-        #         "Be careful, running the install on a development branch!"
-        #     )
-        #     dev_version = True
-
-        # if run_migration:
-        #     plugin_dir = plugin_test_data_path()
-        #     feedback.reportError(
-        #         "Be careful, running migrations on an empty database using {} "
-        #         "instead of {}".format(run_migration, plugin_version)
-        #     )
-        #     plugin_version = run_migration
-
-        # # Loop sql files and run SQL code
-        # for sql_file in sql_files:
-        #     feedback.pushInfo(sql_file)
-        #     sql_file = os.path.join(plugin_dir, "install/sql/{}".format(sql_file))
-        #     with open(sql_file, "r") as f:
-        #         sql = f.read()
-        #         if len(sql.strip()) == 0:
-        #             feedback.pushInfo("  Skipped (empty file)")
-        #             continue
-
-        #         try:
-        #             connection.executeSql(sql)
-        #         except QgsProviderConnectionException as e:
-        #             connection.executeSql("ROLLBACK;")
-        #             raise QgsProcessingException(str(e))
-        #         feedback.pushInfo("  Success !")
-
-        # # Add version
-        # if run_migration or not dev_version:
-        #     metadata_version = plugin_version
-        # else:
-        #     migrations = available_migrations(000000)
-        #     last_migration = migrations[-1]
-        #     metadata_version = (
-        #         last_migration.replace("upgrade_to_", "").replace(".sql", "").strip()
-        #     )
-        #     feedback.reportError("Latest migration is {}".format(metadata_version))
-
-        # self.vacuum_all_tables(connection, feedback)
-
-        # sql = """
-        #     INSERT INTO {}.qgis_plugin
-        #     (id, version, version_date, status)
-        #     VALUES (0, '{}', now()::timestamp(0), 1)""".format(SCHEMA, metadata_version)
-
-        # try:
-        #     connection.executeSql(sql)
-        # except QgsProviderConnectionException as e:
-        #     connection.executeSql("ROLLBACK;")
-        #     raise QgsProcessingException(str(e))
-        # feedback.pushInfo("Database version '{}'.".format(metadata_version))
-
-        # if not run_migration:
-        #     self.install_html_templates(feedback, connection_name, context)
-        # else:
-        #     feedback.reportError(
-        #         'As you are running an old version of the database, HTML templates are not installed.')
-
-        # add_connection(connection_name)
-
         sql = "  SELECT d.schema_name, d.table_name"
         sql += " FROM pgmetadata.dataset d"
         sql += " INNER JOIN pgmetadata.v_valid_dataset v"
@@ -256,15 +164,63 @@ class AddThemeLayers(BaseProcessingAlgorithm):
         sql += " WHERE '{}' = any (themes)".format(theme_id)
 
         try:
-            data = connection.executeSql(sql)
+            layers = connection.executeSql(sql)
         except QgsProviderConnectionException as e:
             self.logMessage(str(e), Qgis.Critical)
             return
 
-        if not data:
+        if not layers:
             feedback.reportError(tr("No tables found for theme {theme}.").format(theme=theme_id))
             return {}
         
-        feedback.pushInfo(f"erster {data[0]}, zweiter {data[1]}")
-            
-        return {}
+        feedback.pushInfo(f"erster {layers[0]}, zweiter {layers[1]}")
+        
+        layer = layers[0]
+        
+        # code for adding layer taken from locator.py
+        schema_name = layer[0]
+        table_name = layer[1]
+        feedback.pushInfo(f"Lade {schema_name}.{table_name}.")
+        
+        if Qgis.QGIS_VERSION_INT < 31200:
+            table = [t for t in connection.tables(schema_name) if t.tableName() == table_name][0]
+        else:
+            table = connection.table(schema_name, table_name)
+
+        uri = QgsDataSourceUri(connection.uri())
+        uri.setSchema(schema_name)
+        uri.setTable(table_name)
+        uri.setGeometryColumn(table.geometryColumn())
+        geom_types = table.geometryColumnTypes()
+        if geom_types:
+            # Take the first one
+            uri.setWkbType(geom_types[0].wkbType)
+        # TODO, we should try table.crsList() and uri.setSrid()
+        pk = table.primaryKeyColumns()
+        if pk:
+            uri.setKeyColumn(pk[0])
+
+        feedback.pushInfo(f"uri: {uri}")
+        #layer_to_add = QgsVectorLayer(uri.uri(), table_name, 'postgres')
+        # Maybe there is a default style, you should load it
+        #layer_to_add.loadDefaultStyle()
+        #QgsProject.instance().addMapLayer(layer_to_add)
+
+        #return {self.OUTPUT: layer_to_add}
+        
+        # from https://github.com/qgis/QGIS/blob/master/python/plugins/processing/algs/qgis/PostGISExecuteAndLoadSQL.py
+        
+        vlayer = QgsVectorLayer(uri.uri(), table_name, 'postgres')
+
+        if not vlayer.isValid():
+            raise QgsProcessingException(tr("""This layer is invalid!
+                Please check the PostGIS log for error messages."""))
+
+        context.temporaryLayerStore().addMapLayer(vlayer)
+        context.addLayerToLoadOnCompletion(
+            vlayer.id(),
+            QgsProcessingContext.LayerDetails(table_name,
+                                              context.project(),
+                                              self.OUTPUT))
+
+        return {self.OUTPUT: vlayer.id()}
