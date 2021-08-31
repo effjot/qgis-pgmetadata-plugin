@@ -111,17 +111,13 @@ class AddThemeLayers(BaseProcessingAlgorithm):
         )
         self.addParameter(param)
 
-        # Output is set of layers
+        # Output is a set of layers
         self.addOutput(
-            #QgsProcessingOutputMultipleLayers(
-            QgsProcessingOutputVectorLayer(
+            QgsProcessingOutputMultipleLayers(
                 self.OUTPUT,
-                tr("Resulting layers"),
-                #type=QgsProcessing.TypeVectorAnyGeometry
+                tr("Resulting layers")
             )
         )
-        #self.addParameter(param)
-
 
     def checkParameterValues(self, parameters, context):
         if Qgis.QGIS_VERSION_INT >= 31400:
@@ -167,60 +163,59 @@ class AddThemeLayers(BaseProcessingAlgorithm):
             layers = connection.executeSql(sql)
         except QgsProviderConnectionException as e:
             self.logMessage(str(e), Qgis.Critical)
-            return
+            return {}
 
         if not layers:
             feedback.reportError(tr("No tables found for theme {theme}.").format(theme=theme_id))
             return {}
         
-        feedback.pushInfo(f"erster {layers[0]}, zweiter {layers[1]}")
+        feedback.pushInfo(tr("Theme {theme} contains {n} layer(s):").format(theme=theme_id,
+                                                                          n=len(layers)))
         
-        layer = layers[0]
+        vlayer_ids = []  # collect layer IDs for OUTPUT
         
-        # code for adding layer taken from locator.py
-        schema_name = layer[0]
-        table_name = layer[1]
-        feedback.pushInfo(f"Lade {schema_name}.{table_name}.")
+        for layer in layers:
+                        
+            # code for getting layer taken from locator.py
+
+            schema_name = layer[0]
+            table_name = layer[1]
+            feedback.pushInfo(f"{schema_name}.{table_name}")
+            
+            if Qgis.QGIS_VERSION_INT < 31200:
+                table = [t for t in connection.tables(schema_name) if t.tableName() == table_name][0]
+            else:
+                table = connection.table(schema_name, table_name)
+    
+            uri = QgsDataSourceUri(connection.uri())
+            uri.setSchema(schema_name)
+            uri.setTable(table_name)
+            uri.setGeometryColumn(table.geometryColumn())
+            geom_types = table.geometryColumnTypes()
+            if geom_types:
+                # Take the first one
+                uri.setWkbType(geom_types[0].wkbType)
+            # TODO, we should try table.crsList() and uri.setSrid()
+            pk = table.primaryKeyColumns()
+            if pk:
+                uri.setKeyColumn(pk[0])
+            
+            # code for adding layer from https://github.com/qgis/QGIS/blob/master/python/plugins/processing/algs/qgis/PostGISExecuteAndLoadSQL.py
+            
+            vlayer = QgsVectorLayer(uri.uri(), table_name, 'postgres')
+    
+            if not vlayer.isValid():
+                raise QgsProcessingException(tr("""This layer is invalid!
+                    Please check the PostGIS log for error messages."""))
+    
+            context.temporaryLayerStore().addMapLayer(vlayer)
+            context.addLayerToLoadOnCompletion(
+                vlayer.id(),
+                QgsProcessingContext.LayerDetails(table_name,
+                                                  context.project(),
+                                                  self.OUTPUT))
+            vlayer_ids.append(vlayer.id())
+
+        feedback.pushInfo('')
         
-        if Qgis.QGIS_VERSION_INT < 31200:
-            table = [t for t in connection.tables(schema_name) if t.tableName() == table_name][0]
-        else:
-            table = connection.table(schema_name, table_name)
-
-        uri = QgsDataSourceUri(connection.uri())
-        uri.setSchema(schema_name)
-        uri.setTable(table_name)
-        uri.setGeometryColumn(table.geometryColumn())
-        geom_types = table.geometryColumnTypes()
-        if geom_types:
-            # Take the first one
-            uri.setWkbType(geom_types[0].wkbType)
-        # TODO, we should try table.crsList() and uri.setSrid()
-        pk = table.primaryKeyColumns()
-        if pk:
-            uri.setKeyColumn(pk[0])
-
-        feedback.pushInfo(f"uri: {uri}")
-        #layer_to_add = QgsVectorLayer(uri.uri(), table_name, 'postgres')
-        # Maybe there is a default style, you should load it
-        #layer_to_add.loadDefaultStyle()
-        #QgsProject.instance().addMapLayer(layer_to_add)
-
-        #return {self.OUTPUT: layer_to_add}
-        
-        # from https://github.com/qgis/QGIS/blob/master/python/plugins/processing/algs/qgis/PostGISExecuteAndLoadSQL.py
-        
-        vlayer = QgsVectorLayer(uri.uri(), table_name, 'postgres')
-
-        if not vlayer.isValid():
-            raise QgsProcessingException(tr("""This layer is invalid!
-                Please check the PostGIS log for error messages."""))
-
-        context.temporaryLayerStore().addMapLayer(vlayer)
-        context.addLayerToLoadOnCompletion(
-            vlayer.id(),
-            QgsProcessingContext.LayerDetails(table_name,
-                                              context.project(),
-                                              self.OUTPUT))
-
-        return {self.OUTPUT: vlayer.id()}
+        return {self.OUTPUT: vlayer_ids}
