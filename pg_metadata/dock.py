@@ -94,7 +94,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         # Add theme layers button
         self.theme_layers.setText('')
         self.theme_layers.setToolTip(tr("Add all layers of a theme"))
-        self.theme_layers.setIcon(QgsApplication.getThemeIcon('/mActionShowBookmarks.svg'))
+        self.theme_layers.setIcon(QgsApplication.getThemeIcon('/mActionAddGroup.svg'))
         self.theme_layers.clicked.connect(self.add_theme_layers)
 
         # Settings menu

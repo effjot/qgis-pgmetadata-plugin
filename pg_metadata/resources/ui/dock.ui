@@ -18,6 +18,13 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
+       <widget class="QToolButton" name="theme_layers">
+        <property name="text">
+         <string notr="true">...</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QToolButton" name="save_button">
         <property name="text">
          <string notr="true">...</string>
@@ -49,13 +56,6 @@
       </item>
       <item>
        <widget class="QToolButton" name="flatten_dataset_table">
-        <property name="text">
-         <string notr="true">...</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QToolButton" name="theme_layers">
         <property name="text">
          <string notr="true">...</string>
         </property>
