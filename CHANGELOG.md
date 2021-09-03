@@ -3,7 +3,11 @@
 ## Unreleased
 
 * Add support for PostgreSQL views (contribution from @tschuettenberg QGIS Germany)
-* Add translations from Transifex for the German language (contribution from Florian Jenn)
+* Add translations for the German language (contribution from @effjot)
+* Add new contact role "originator" and "processor"
+* Add new frequencies for data update "biannually", "irregular" and "not planned"
+* Add new German licenses
+* Fix encoding issues in some situations, always set UTF-8 when opening files
 
 ## 1.0.0 - 2021-05-27
 

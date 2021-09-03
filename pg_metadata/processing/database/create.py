@@ -195,7 +195,7 @@ class CreateDatabaseStructure(BaseDatabaseAlgorithm):
         for sql_file in sql_files:
             feedback.pushInfo(sql_file)
             sql_file = os.path.join(plugin_dir, "install/sql/{}".format(sql_file))
-            with open(sql_file, "r") as f:
+            with open(sql_file, "r", encoding='utf8') as f:
                 sql = f.read()
                 if len(sql.strip()) == 0:
                     feedback.pushInfo("  Skipped (empty file)")
@@ -204,6 +204,7 @@ class CreateDatabaseStructure(BaseDatabaseAlgorithm):
                 try:
                     connection.executeSql(sql)
                 except QgsProviderConnectionException as e:
+                    connection.executeSql("ROLLBACK;")
                     raise QgsProcessingException(str(e))
                 feedback.pushInfo("  Success !")
 
@@ -228,6 +229,7 @@ class CreateDatabaseStructure(BaseDatabaseAlgorithm):
         try:
             connection.executeSql(sql)
         except QgsProviderConnectionException as e:
+            connection.executeSql("ROLLBACK;")
             raise QgsProcessingException(str(e))
         feedback.pushInfo("Database version '{}'.".format(metadata_version))
 

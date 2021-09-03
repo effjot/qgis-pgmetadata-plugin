@@ -1,3 +1,4 @@
+BEGIN;
 --
 -- PostgreSQL database dump
 --
@@ -287,3 +288,5 @@ ALTER TABLE ONLY pgmetadata.theme ALTER COLUMN id SET DEFAULT nextval('pgmetadat
 -- PostgreSQL database dump complete
 --
 
+
+COMMIT;
