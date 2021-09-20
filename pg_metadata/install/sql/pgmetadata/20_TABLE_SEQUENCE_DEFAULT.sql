@@ -75,8 +75,7 @@ CREATE TABLE pgmetadata.dataset (
     geom public.geometry(Polygon,4326),
     data_last_update timestamp without time zone,
     themes text[],
-    license_attribution text,
-    project_ids text
+    license_attribution text
 );
 
 

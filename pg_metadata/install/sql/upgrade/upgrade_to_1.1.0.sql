@@ -229,7 +229,6 @@ SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 136, true);
 
 -- new fields 
 ALTER TABLE pgmetadata.dataset ADD COLUMN IF NOT EXISTS license_attribution text;
-ALTER TABLE pgmetadata.dataset ADD COLUMN IF NOT EXISTS project_ids text;
 
 
 CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
