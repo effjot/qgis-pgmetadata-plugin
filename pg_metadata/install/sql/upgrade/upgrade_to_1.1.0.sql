@@ -203,9 +203,9 @@ DROP TABLE pgmetadata.t_glossary;
 CREATE TABLE pgmetadata.t_glossary (field text, code text, item_order smallint, label_de text, description_de text);
 INSERT INTO pgmetadata.t_glossary (field, code, item_order, label_de, description_de)
 VALUES
-('dataset.publication_frequency', 8, 'DAY', 'täglich', 'Daten werden täglich aktualisiert'),
-('dataset.publication_frequency', 7, 'WEE', 'wöchentlich', 'Daten werden wöchentlich aktualisiert'),
-('dataset.publication_frequency', 5, 'MON', 'monatlich',  'Daten werden monatlich aktualisiert')
+('dataset.publication_frequency', 'DAY', 8, 'täglich', 'Daten werden täglich aktualisiert'),
+('dataset.publication_frequency', 'WEE', 7, 'wöchentlich', 'Daten werden wöchentlich aktualisiert'),
+('dataset.publication_frequency', 'MON', 5, 'monatlich',  'Daten werden monatlich aktualisiert')
 ON CONFLICT DO NOTHING;
 
 UPDATE pgmetadata.glossary AS g
@@ -235,11 +235,7 @@ INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (139, 'dataset.publication_frequency', 'CON', 'Continual', 'Data is repeatedly and frequently updated', 9, NULL, NULL, NULL, NULL, NULL, NULL, 'kontinuierlich', 'Daten werden ständig aktualisiert');
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (140, 'dataset.publication_frequency', 'UNK', 'Unknown', 'Frequency of maintenance for the data is not known', 12, NULL, NULL, NULL, NULL, NULL, NULL, 'unbekannt', 'ein Aktualisierungsintervall ist nicht bekannt');
 
--- update item order of existing frequencies; FIXME: is this robust? (i.e. can this upgrade script execute several times?)
-update pgmetadata.glossary set item_order = item_order + 1
-where field = 'dataset.publication_frequency' and code in ('DAY', 'WEE', 'MON');
-
-SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 136, true);
+SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 140, true);
 
 
 
