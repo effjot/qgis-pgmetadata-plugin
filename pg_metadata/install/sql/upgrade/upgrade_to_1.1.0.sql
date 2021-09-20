@@ -187,16 +187,30 @@ VALUES
 ('dataset.categories', 'UTI', 'Ver- und Entsorgung, Kommunikation', 'Energie-, Wasser- und Abfallsysteme, Kommunikationsinfrastruktur und -dienste'),
 ('dataset.confidentiality', 'OPE', 'offen', 'Keine Einschränkungen des Zugriffs auf diese Daten'),
 ('dataset.confidentiality', 'RES', 'eingeschränkt', 'Der Zugriff auf die Daten ist auf ausgewählte Nutzer beschränkt'),
-('dataset.publication_frequency', 'DAY', 'täglich', 'Daten werden täglich aktualisiert'),
-('dataset.publication_frequency', 'MON', 'monatlich',  'Daten werden monatlich aktualisiert'),
 ('dataset.publication_frequency', 'YEA', 'jährlich', 'Daten werden jährlich aktualisiert'),
-('dataset.publication_frequency', 'NEC', 'bei Bedarf',  'Daten werden bei Bedarf aktualisiert'),
-('dataset.publication_frequency', 'WEE', 'wöchentlich', 'Daten werden wöchentlich aktualisiert')
+('dataset.publication_frequency', 'NEC', 'bei Bedarf',  'Daten werden bei Bedarf aktualisiert')
 ON CONFLICT DO NOTHING;
 
 UPDATE pgmetadata.glossary AS g
 SET (label_de, description_de)
 = (t.label_de, t.description_de)
+FROM pgmetadata.t_glossary AS t
+WHERE g.field = t.field AND g.code = t.code;
+
+DROP TABLE pgmetadata.t_glossary;
+
+
+CREATE TABLE pgmetadata.t_glossary (field text, code text, item_order smallint, label_de text, description_de text);
+INSERT INTO pgmetadata.t_glossary (field, code, item_order, label_de, description_de)
+VALUES
+('dataset.publication_frequency', 8, 'DAY', 'täglich', 'Daten werden täglich aktualisiert'),
+('dataset.publication_frequency', 7, 'WEE', 'wöchentlich', 'Daten werden wöchentlich aktualisiert'),
+('dataset.publication_frequency', 5, 'MON', 'monatlich',  'Daten werden monatlich aktualisiert')
+ON CONFLICT DO NOTHING;
+
+UPDATE pgmetadata.glossary AS g
+SET (item_order, label_de, description_de)
+= (t.item_order, t.label_de, t.description_de)
 FROM pgmetadata.t_glossary AS t
 WHERE g.field = t.field AND g.code = t.code;
 
@@ -212,10 +226,14 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de,
 description_de) VALUES (132, 'dataset.publication_frequency', 'BIA', 'Biannually', 'Update data twice each year', 3, NULL, NULL, NULL, NULL, NULL, NULL, 'halbjährlich', 'Daten werden halbjährlich aktualisiert');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (133, 'dataset.publication_frequency', 'IRR', 'Irregular', 'Data is updated in intervals that are uneven in duration', 7, NULL, NULL, NULL, NULL, NULL, NULL, 'unregelmäßig', 'Daten werden unregelmäßig aktualisiert');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (134, 'dataset.publication_frequency', 'NOP', 'Not planned', 'There are no plans to update the data', 8, NULL, NULL, NULL, NULL, NULL, NULL, 'nicht geplant', 'eine Aktualisierung der Daten ist nicht geplant');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (133, 'dataset.publication_frequency', 'IRR', 'Irregular', 'Data is updated in intervals that are uneven in duration', 10, NULL, NULL, NULL, NULL, NULL, NULL, 'unregelmäßig', 'Daten werden unregelmäßig aktualisiert');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (134, 'dataset.publication_frequency', 'NOP', 'Not planned', 'There are no plans to update the data', 11, NULL, NULL, NULL, NULL, NULL, NULL, 'nicht geplant', 'eine Aktualisierung der Daten ist nicht geplant');
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (135, 'contact.contact_role', 'OR', 'Originator', 'Party who created the resource', 40, NULL, NULL, NULL, NULL, NULL, NULL, 'Urheber', 'Erzeuger der Ressource');
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (136, 'contact.contact_role', 'PR', 'Processor', 'Party who has processed the data in a manner such that the resource has been modified', 50, NULL, NULL, NULL, NULL, NULL, NULL, 'Bearbeiter', 'Person oder Stelle, die die Ressource in einem Arbeitsschritt verändert hat');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (137, 'dataset.publication_frequency', 'QUA', 'Quarterly', 'Update data every three months', 4, NULL, NULL, NULL, NULL, NULL, NULL, 'vierteljährlich', 'Daten werden vierteljährlich aktualisiert');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (138, 'dataset.publication_frequency', 'FTN', 'Fortnightly', 'Update data every two weeks', 6, NULL, NULL, NULL, NULL, NULL, NULL, 'zweiwöchentlich', 'Daten werden vierzehntägig aktualisiert');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (139, 'dataset.publication_frequency', 'CON', 'Continual', 'Data is repeatedly and frequently updated', 9, NULL, NULL, NULL, NULL, NULL, NULL, 'kontinuierlich', 'Daten werden ständig aktualisiert');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (140, 'dataset.publication_frequency', 'UNK', 'Unknown', 'Frequency of maintenance for the data is not known', 12, NULL, NULL, NULL, NULL, NULL, NULL, 'unbekannt', 'ein Aktualisierungsintervall ist nicht bekannt');
 
 -- update item order of existing frequencies; FIXME: is this robust? (i.e. can this upgrade script execute several times?)
 update pgmetadata.glossary set item_order = item_order + 1
