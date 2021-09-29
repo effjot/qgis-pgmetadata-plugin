@@ -151,7 +151,6 @@ CREATE VIEW pgmetadata.v_dataset AS
     ss.publication_date,
     ss.publication_frequency,
     ss.license,
-    ss.license_attribution,
     ss.confidentiality,
     ss.feature_count,
     ss.geometry_type,
@@ -160,7 +159,8 @@ CREATE VIEW pgmetadata.v_dataset AS
     ss.spatial_extent,
     ss.creation_date,
     ss.update_date,
-    ss.data_last_update
+    ss.data_last_update,
+    ss.license_attribution
    FROM ss
   GROUP BY ss.id, ss.uid, ss.table_name, ss.schema_name, ss.title, ss.abstract, ss.keywords, ss.spatial_level, ss.minimum_optimal_scale, ss.maximum_optimal_scale, ss.publication_date, ss.publication_frequency, ss.license, ss.license_attribution, ss.confidentiality, ss.feature_count, ss.geometry_type, ss.projection_name, ss.projection_authid, ss.spatial_extent, ss.creation_date, ss.update_date, ss.data_last_update;
 

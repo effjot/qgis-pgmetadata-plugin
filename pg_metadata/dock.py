@@ -90,7 +90,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         self.flatten_dataset_table.setToolTip(tr("Add the catalog table"))
         self.flatten_dataset_table.setIcon(QgsApplication.getThemeIcon("/mActionAddHtml.svg"))
         self.flatten_dataset_table.clicked.connect(self.add_flatten_dataset_table)
-        
+
         # Add theme layers button
         self.theme_layers.setText('')
         self.theme_layers.setToolTip(tr("Add all layers of a theme"))
@@ -393,11 +393,11 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         dialog.setLabelText(tr("Choose the theme to add layers from"))
         if not dialog.exec_():
             return
-        theme = dialog.textValue()    
+        theme = dialog.textValue()
         theme_id = available_themes[theme]
-        
-        #Loading is quite fast, so message after loading should be enough
-        #iface.messageBar().pushMessage(tr("Loading theme “{}”").format(theme), level=Qgis.Info)
+
+        # Loading is quite fast, so message after loading should be enough.
+        # iface.messageBar().pushMessage(tr("Loading theme “{}”").format(theme), level=Qgis.Info)
         
         sql = "  SELECT d.schema_name, d.table_name"
         sql += " FROM pgmetadata.dataset d"
@@ -426,7 +426,8 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
 
             schema_name = layer[0]
             table_name = layer[1]
-            QgsMessageLog.logMessage(f'Adding layer "{schema_name}"."{table_name}"', 'PgMetadata', level=Qgis.Info)
+            QgsMessageLog.logMessage(f'Adding layer "{schema_name}"."{table_name}"',
+                                     'PgMetadata', level=Qgis.Info)
             
             if Qgis.QGIS_VERSION_INT < 31200:
                 table = [t for t in connection.tables(schema_name) if t.tableName() == table_name][0]
