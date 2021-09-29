@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.1.0 - 2021-09-29
+
 * Add support for PostgreSQL views (contribution from @tschuettenberg QGIS Germany)
 * Add translations for the German language (contribution from @effjot)
 * Add new contact role "originator" and "processor" (contribution from @effjot)
@@ -9,6 +11,8 @@
 * Add new German licenses (contribution from @effjot)
 * Add more fields when searching with the locator bar (contribution from @effjot)
 * Fix encoding issues in some situations, always set UTF-8 when opening files
+* Fix the administration project about constraint with date but without a default value
+* Update also the field "update_date" when updating a dataset entry in the trigger
 
 ## 1.0.0 - 2021-05-27
 
