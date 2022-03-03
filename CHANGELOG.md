@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+* Add raster support
+* New button "Add all theme layers"
+* New field "license_attribution" for CC-by attributions, license grant numbers, etc.
+* Complete set of ISO 19115 publication frequency terms
+
 ## 1.1.1 - 2022-02-14
 
 * Fix an error when PgMetadata database is not temporary reachable
