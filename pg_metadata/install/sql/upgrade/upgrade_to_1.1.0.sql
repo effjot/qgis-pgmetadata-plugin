@@ -187,30 +187,16 @@ VALUES
 ('dataset.categories', 'UTI', 'Ver- und Entsorgung, Kommunikation', 'Energie-, Wasser- und Abfallsysteme, Kommunikationsinfrastruktur und -dienste'),
 ('dataset.confidentiality', 'OPE', 'offen', 'Keine Einschränkungen des Zugriffs auf diese Daten'),
 ('dataset.confidentiality', 'RES', 'eingeschränkt', 'Der Zugriff auf die Daten ist auf ausgewählte Nutzer beschränkt'),
+('dataset.publication_frequency', 'DAY', 'täglich', 'Daten werden täglich aktualisiert'),
+('dataset.publication_frequency', 'MON', 'monatlich',  'Daten werden monatlich aktualisiert'),
 ('dataset.publication_frequency', 'YEA', 'jährlich', 'Daten werden jährlich aktualisiert'),
-('dataset.publication_frequency', 'NEC', 'bei Bedarf',  'Daten werden bei Bedarf aktualisiert')
+('dataset.publication_frequency', 'NEC', 'bei Bedarf',  'Daten werden bei Bedarf aktualisiert'),
+('dataset.publication_frequency', 'WEE', 'wöchentlich', 'Daten werden wöchentlich aktualisiert')
 ON CONFLICT DO NOTHING;
 
 UPDATE pgmetadata.glossary AS g
 SET (label_de, description_de)
 = (t.label_de, t.description_de)
-FROM pgmetadata.t_glossary AS t
-WHERE g.field = t.field AND g.code = t.code;
-
-DROP TABLE pgmetadata.t_glossary;
-
-
-CREATE TABLE pgmetadata.t_glossary (field text, code text, item_order smallint, label_de text, description_de text);
-INSERT INTO pgmetadata.t_glossary (field, code, item_order, label_de, description_de)
-VALUES
-('dataset.publication_frequency', 'DAY', 8, 'täglich', 'Daten werden täglich aktualisiert'),
-('dataset.publication_frequency', 'WEE', 7, 'wöchentlich', 'Daten werden wöchentlich aktualisiert'),
-('dataset.publication_frequency', 'MON', 5, 'monatlich',  'Daten werden monatlich aktualisiert')
-ON CONFLICT DO NOTHING;
-
-UPDATE pgmetadata.glossary AS g
-SET (item_order, label_de, description_de)
-= (t.item_order, t.label_de, t.description_de)
 FROM pgmetadata.t_glossary AS t
 WHERE g.field = t.field AND g.code = t.code;
 
@@ -226,17 +212,17 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de,
 description_de) VALUES (132, 'dataset.publication_frequency', 'BIA', 'Biannually', 'Update data twice each year', 3, NULL, NULL, NULL, NULL, NULL, NULL, 'halbjährlich', 'Daten werden halbjährlich aktualisiert');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (133, 'dataset.publication_frequency', 'IRR', 'Irregular', 'Data is updated in intervals that are uneven in duration', 10, NULL, NULL, NULL, NULL, NULL, NULL, 'unregelmäßig', 'Daten werden unregelmäßig aktualisiert');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (134, 'dataset.publication_frequency', 'NOP', 'Not planned', 'There are no plans to update the data', 11, NULL, NULL, NULL, NULL, NULL, NULL, 'nicht geplant', 'eine Aktualisierung der Daten ist nicht geplant');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (133, 'dataset.publication_frequency', 'IRR', 'Irregular', 'Data is updated in intervals that are uneven in duration', 7, NULL, NULL, NULL, NULL, NULL, NULL, 'unregelmäßig', 'Daten werden unregelmäßig aktualisiert');
+INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (134, 'dataset.publication_frequency', 'NOP', 'Not planned', 'There are no plans to update the data', 8, NULL, NULL, NULL, NULL, NULL, NULL, 'nicht geplant', 'eine Aktualisierung der Daten ist nicht geplant');
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (135, 'contact.contact_role', 'OR', 'Originator', 'Party who created the resource', 40, NULL, NULL, NULL, NULL, NULL, NULL, 'Urheber', 'Erzeuger der Ressource');
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (136, 'contact.contact_role', 'PR', 'Processor', 'Party who has processed the data in a manner such that the resource has been modified', 50, NULL, NULL, NULL, NULL, NULL, NULL, 'Bearbeiter', 'Person oder Stelle, die die Ressource in einem Arbeitsschritt verändert hat');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (137, 'dataset.publication_frequency', 'QUA', 'Quarterly', 'Update data every three months', 4, NULL, NULL, NULL, NULL, NULL, NULL, 'vierteljährlich', 'Daten werden vierteljährlich aktualisiert');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (138, 'dataset.publication_frequency', 'FTN', 'Fortnightly', 'Update data every two weeks', 6, NULL, NULL, NULL, NULL, NULL, NULL, 'zweiwöchentlich', 'Daten werden vierzehntägig aktualisiert');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (139, 'dataset.publication_frequency', 'CON', 'Continual', 'Data is repeatedly and frequently updated', 9, NULL, NULL, NULL, NULL, NULL, NULL, 'kontinuierlich', 'Daten werden ständig aktualisiert');
-INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (140, 'dataset.publication_frequency', 'UNK', 'Unknown', 'Frequency of maintenance for the data is not known', 12, NULL, NULL, NULL, NULL, NULL, NULL, 'unbekannt', 'ein Aktualisierungsintervall ist nicht bekannt');
 
-SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 140, true);
+-- update item order of existing frequencies;
+update pgmetadata.glossary set item_order = item_order + 1
+where field = 'dataset.publication_frequency' and code in ('DAY', 'WEE', 'MON');
 
+
+SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 136, true);
 
 -- Issue #75, also update "update_date"
 
@@ -343,110 +329,5 @@ BEGIN
     RETURN NEW;
 END;
 $$;
-
--- DATASET
-
--- new fields 
-ALTER TABLE pgmetadata.dataset ADD COLUMN IF NOT EXISTS license_attribution text;
-
-
-CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
- WITH glossary AS (
-         SELECT COALESCE(current_setting('pgmetadata.locale'::text, true), 'en'::text) AS locale,
-            v_glossary.dict
-           FROM pgmetadata.v_glossary
-        ), s AS (
-         SELECT d.id,
-            d.uid,
-            d.table_name,
-            d.schema_name,
-            d.title,
-            d.abstract,
-            d.categories,
-            d.themes,
-            d.keywords,
-            d.spatial_level,
-            d.minimum_optimal_scale,
-            d.maximum_optimal_scale,
-            d.publication_date,
-            d.publication_frequency,
-            d.license,
-            d.license_attribution,
-            d.confidentiality,
-            d.feature_count,
-            d.geometry_type,
-            d.projection_name,
-            d.projection_authid,
-            d.spatial_extent,
-            d.creation_date,
-            d.update_date,
-            d.data_last_update,
-            d.geom,
-            cat.cat,
-            theme.theme
-           FROM ((pgmetadata.dataset d
-             LEFT JOIN LATERAL unnest(d.categories) cat(cat) ON (true))
-             LEFT JOIN LATERAL unnest(d.themes) theme(theme) ON (true))
-          WHERE true
-          ORDER BY d.id
-        ), ss AS (
-         SELECT s.id,
-            s.uid,
-            s.table_name,
-            s.schema_name,
-            s.title,
-            s.abstract,
-            ((((glossary.dict -> 'dataset.categories'::text) -> s.cat) -> 'label'::text) ->> glossary.locale) AS cat,
-            gtheme.label AS theme,
-            s.keywords,
-            s.spatial_level,
-            ('1/'::text || s.minimum_optimal_scale) AS minimum_optimal_scale,
-            ('1/'::text || s.maximum_optimal_scale) AS maximum_optimal_scale,
-            s.publication_date,
-            ((((glossary.dict -> 'dataset.publication_frequency'::text) -> s.publication_frequency) -> 'label'::text) ->> glossary.locale) AS publication_frequency,
-            ((((glossary.dict -> 'dataset.license'::text) -> s.license) -> 'label'::text) ->> glossary.locale) AS license,
-            s.license_attribution,
-            ((((glossary.dict -> 'dataset.confidentiality'::text) -> s.confidentiality) -> 'label'::text) ->> glossary.locale) AS confidentiality,
-            s.feature_count,
-            s.geometry_type,
-            (regexp_split_to_array((rs.srtext)::text, '"'::text))[2] AS projection_name,
-            s.projection_authid,
-            s.spatial_extent,
-            s.creation_date,
-            s.update_date,
-            s.data_last_update
-           FROM glossary,
-            ((s
-             LEFT JOIN pgmetadata.theme gtheme ON ((gtheme.code = s.theme)))
-             LEFT JOIN public.spatial_ref_sys rs ON ((concat(rs.auth_name, ':', rs.auth_srid) = s.projection_authid)))
-        )
- SELECT ss.id,
-    ss.uid,
-    ss.table_name,
-    ss.schema_name,
-    ss.title,
-    ss.abstract,
-    string_agg(DISTINCT ss.cat, ', '::text ORDER BY ss.cat) AS categories,
-    string_agg(DISTINCT ss.theme, ', '::text ORDER BY ss.theme) AS themes,
-    ss.keywords,
-    ss.spatial_level,
-    ss.minimum_optimal_scale,
-    ss.maximum_optimal_scale,
-    ss.publication_date,
-    ss.publication_frequency,
-    ss.license,
-    ss.confidentiality,
-    ss.feature_count,
-    ss.geometry_type,
-    ss.projection_name,
-    ss.projection_authid,
-    ss.spatial_extent,
-    ss.creation_date,
-    ss.update_date,
-    ss.data_last_update,
-    ss.license_attribution
-   FROM ss
-  GROUP BY ss.id, ss.uid, ss.table_name, ss.schema_name, ss.title, ss.abstract, ss.keywords, ss.spatial_level, ss.minimum_optimal_scale, ss.maximum_optimal_scale, ss.publication_date, ss.publication_frequency, ss.license, ss.license_attribution, ss.confidentiality, ss.feature_count, ss.geometry_type, ss.projection_name, ss.projection_authid, ss.spatial_extent, ss.creation_date, ss.update_date, ss.data_last_update;
-
 
 COMMIT;
