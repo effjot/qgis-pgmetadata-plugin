@@ -354,9 +354,9 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
 
     def add_theme_layers(self):
         """ Add all layers of a theme to the project. """
-        
+
         # FIXME: a lot of duplicated code from locator.py/triggerResult
-        
+
         connections, message = connections_list()
         if not connections:
             LOGGER.critical(message)

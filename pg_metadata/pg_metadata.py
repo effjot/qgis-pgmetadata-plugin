@@ -69,6 +69,13 @@ class PgMetadata:
             self.locator_filter = LocatorFilter(iface)
             iface.registerLocatorFilter(self.locator_filter)
 
+        # Item in Add Layers menu for loading all layers from Theme
+        self.addtheme_action = QAction(icon,
+                                       'Add all Layers from PgMetadata Theme',
+                                       iface.mainWindow())
+        iface.addLayerMenu().addAction(self.addtheme_action)
+        self.addtheme_action.triggered.connect(self.dock.add_theme_layers)
+
     @staticmethod
     def open_help():
         """ Open the online help. """
