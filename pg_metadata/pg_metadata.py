@@ -13,7 +13,7 @@ from pg_metadata.dock import PgMetadataDock
 from pg_metadata.locator import LocatorFilter
 from pg_metadata.processing.provider import PgMetadataProvider
 from pg_metadata.qgis_plugin_tools.tools.custom_logging import setup_logger
-from pg_metadata.qgis_plugin_tools.tools.i18n import setup_translation
+from pg_metadata.qgis_plugin_tools.tools.i18n import setup_translation, tr
 from pg_metadata.qgis_plugin_tools.tools.resources import (
     plugin_path,
     resources_path,
@@ -68,6 +68,13 @@ class PgMetadata:
         if not self.locator_filter:
             self.locator_filter = LocatorFilter(iface)
             iface.registerLocatorFilter(self.locator_filter)
+
+        # Item in Add Layers menu for loading all layers from Theme
+        self.addtheme_action = QAction(icon,
+                                       tr('Add all Layers from PgMetadata Theme…'),
+                                       iface.mainWindow())
+        iface.addLayerMenu().addAction(self.addtheme_action)
+        self.addtheme_action.triggered.connect(self.dock.add_theme_layers)
 
     @staticmethod
     def open_help():

@@ -126,6 +126,11 @@ class LocatorFilter(QgsLocatorFilter):
         uri.setSchema(schema_name)
         uri.setTable(table_name)
         uri.setGeometryColumn(table.geometryColumn())
+        geom_types = table.geometryColumnTypes()
+        if geom_types:
+            # Take the first one
+            uri.setWkbType(geom_types[0].wkbType)
+        # TODO, we should try table.crsList() and uri.setSrid()
         pk = table.primaryKeyColumns()
         if pk:
             uri.setKeyColumn(pk[0])

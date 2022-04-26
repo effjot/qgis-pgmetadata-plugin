@@ -24,6 +24,7 @@ Metadata for a PostgreSQL table includes :
 Some key features for final users :
 
 * a [locator](./user-guide/end-user.md#locator) to easy search and add layers
+* add all layers contained in a metadata theme as a layer group in one go
 * a [dock](./user-guide/end-user.md#panel) to display metadata
 * Export a [single](./user-guide/end-user.md#export-a-single-metadata) sheet to PDF, HTML DCAT
 * Export the full [catalog](./user-guide/end-user.md#export-the-catalog)
