@@ -203,7 +203,7 @@ BEGIN
         html = regexp_replace(
             html,
             concat('\[%( )*?(")*', item.col ,'(")*( )*%\]'),
-            item.val,
+            replace(item.val, '\', '\\'), -- escape backslashes in substitution string (\1...\9 refer to subexpressions)
             'g'
         )
         ;
@@ -360,7 +360,7 @@ BEGIN
     html = regexp_replace(
         html,
         concat('\[%( )*?(")*meta_links(")*( )*%\]'),
-        coalesce(html_link, ''),
+        coalesce(replace(html_link, '\', '\\'), ''), -- escape backslashes in substitution string (\1...\9 refer to subexpressions)
         'g'
     );
 
