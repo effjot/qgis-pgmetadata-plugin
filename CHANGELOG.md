@@ -1,11 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.2.0-gci - 2022-04-28
 
 * Add raster support (contribution from @effjot Florian Jenn)
 * New button "Add all theme layers"
 * New field "license_attribution" for CC-by attributions, license grant numbers, etc.
 * Complete set of ISO 19115 publication frequency terms
+* Fix an issue with backslashes in links to Windows files getting mangled
 
 ## 1.1.1 - 2022-02-14
 

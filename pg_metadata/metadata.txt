@@ -1,12 +1,12 @@
 [general]
 name=PgMetadata
 qgisMinimumVersion=3.10
-description=Store some metadata about layers which are stored in PostgreSQL. It's possible to define title, abstract, links, contacts etc. It also provides some search tool, in the QGIS Locator bar for instance.
-author=3Liz
-email=info@3liz.com
+description=Store some metadata about layers which are stored in PostgreSQL. It's possible to define title, abstract, links, contacts etc. It also provides some search tool, in the QGIS Locator bar for instance. Lokale Anpassungen für GCI
+author=3Liz, Florian Jenn
+email=florian.jenn@gci-kw.de
 about=Store some metadata about layers which are stored in PostgreSQL. It's possible to define title, abstract, links, contacts etc. It also provides some search tool, in the QGIS Locator bar for instance.
 
-version=1.2.0
+version=master
 
 tracker=https://github.com/3liz/qgis-pgmetadata-plugin/issues
 repository=https://github.com/3liz/qgis-pgmetadata-plugin
