@@ -122,7 +122,7 @@ CREATE VIEW pgmetadata.v_dataset AS
             ((((glossary.dict -> 'dataset.publication_frequency'::text) -> s.publication_frequency) -> 'label'::text) ->> glossary.locale) AS publication_frequency,
             ((((glossary.dict -> 'dataset.license'::text) -> s.license) -> 'label'::text) ->> glossary.locale) AS license,
             s.license_attribution,
-            ((((glossary.di ct -> 'dataset.confidentiality'::text) -> s.confidentiality) -> 'label'::text) ->> glossary.locale) AS confidentiality,
+            ((((glossary.dict -> 'dataset.confidentiality'::text) -> s.confidentiality) -> 'label'::text) ->> glossary.locale) AS confidentiality,
             s.feature_count,
             s.geometry_type,
             (regexp_split_to_array((rs.srtext)::text, '"'::text))[2] AS projection_name,
