@@ -108,6 +108,9 @@ class PgMetadata:
             iface.pluginHelpMenu().removeAction(self.help_action)
             del self.help_action
 
+        if self.addtheme_action:
+            iface.addLayerMenu().removeAction(self.addtheme_action)
+
     @staticmethod
     def run_tests(pattern='test_*.py', package=None):
         """Run the test inside QGIS."""
