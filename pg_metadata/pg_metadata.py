@@ -9,6 +9,7 @@ from qgis.PyQt.QtGui import QDesktopServices, QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.utils import iface
 
+from pg_metadata.browser_panel import DataItemProvider
 from pg_metadata.dock import PgMetadataDock
 from pg_metadata.locator import LocatorFilter
 from pg_metadata.processing.provider import PgMetadataProvider
@@ -75,6 +76,10 @@ class PgMetadata:
                                        iface.mainWindow())
         iface.addLayerMenu().addAction(self.addtheme_action)
         self.addtheme_action.triggered.connect(self.dock.add_theme_layers)
+        
+        # Add custom provider to Browser panel for adding Themes
+        self.data_item_provider = DataItemProvider(self)
+        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
 
     @staticmethod
     def open_help():
@@ -107,6 +112,13 @@ class PgMetadata:
         if self.help_action:
             iface.pluginHelpMenu().removeAction(self.help_action)
             del self.help_action
+            
+        if self.addtheme_action:
+             iface.addLayerMenu().removeAction(self.addtheme_action)
+
+        if self.data_item_provider:
+            QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
+            self.data_item_provider = None
 
     @staticmethod
     def run_tests(pattern='test_*.py', package=None):
