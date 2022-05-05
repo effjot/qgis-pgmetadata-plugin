@@ -18,6 +18,7 @@ from pg_metadata.qgis_plugin_tools.tools.resources import (
     plugin_path,
     resources_path,
 )
+from pg_metadata.browser_panel import DataItemProvider
 
 
 class PgMetadata:
@@ -76,6 +77,9 @@ class PgMetadata:
         iface.addLayerMenu().addAction(self.addtheme_action)
         self.addtheme_action.triggered.connect(self.dock.add_theme_layers)
 
+        self.data_item_provider = DataItemProvider(self)
+        QgsApplication.instance().dataItemProviderRegistry().addProvider(self.data_item_provider)
+
     @staticmethod
     def open_help():
         """ Open the online help. """
@@ -110,6 +114,10 @@ class PgMetadata:
 
         if self.addtheme_action:
             iface.addLayerMenu().removeAction(self.addtheme_action)
+
+        if self.data_item_provider:
+            QgsApplication.instance().dataItemProviderRegistry().removeProvider(self.data_item_provider)
+            self.data_item_provider = None
 
     @staticmethod
     def run_tests(pattern='test_*.py', package=None):
