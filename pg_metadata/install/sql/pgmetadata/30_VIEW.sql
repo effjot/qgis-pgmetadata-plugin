@@ -374,4 +374,13 @@ COMMENT ON VIEW pgmetadata.v_valid_dataset IS 'Gives a list of lines from pgmeta
 --
 
 
+CREATE VIEW pgmetadata.v_themes_tables AS
+  select th.code, th.label, th.description,
+         d.schema_name, d.table_name, d.title, d.geometry_type
+  from pgmetadata.theme th inner join pgmetadata.dataset d on th.code = any(d.themes)
+  order by th.code, d.schema_name, d.table_name;
+
+COMMENT ON VIEW pgmetadata.v_themes_tables IS 'List of all themes with their tables';
+
+
 COMMIT;

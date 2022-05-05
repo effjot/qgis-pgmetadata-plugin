@@ -1,19 +1,24 @@
 import sip
 
 from qgis.core import (
+    Qgis,
     QgsApplication,
     QgsDataCollectionItem,
     QgsDataItem,
     QgsDataItemProvider,
     QgsDataProvider,
     QgsDirectoryItem,
+    QgsMessageLog,
 )
 from qgis.PyQt.QtGui import QIcon
 
-from pg_metadata.qgis_plugin_tools.tools.resources import (
-#    plugin_path,
-    resources_path,
+from pg_metadata.connection_manager import (
+    check_pgmetadata_is_installed,
+    connections_list,
+    settings_connections_names,
 )
+from pg_metadata.qgis_plugin_tools.tools.resources import resources_path
+from pg_metadata.tools import fetch_themes_single_database
 
 
 class DataItemProvider(QgsDataItemProvider):
@@ -45,15 +50,22 @@ class PgMetadataBrowserRootItem(QgsDataCollectionItem):
         self.plugin = plugin
 
     def createChildren(self):
+        connections, message = connections_list()
+        connection_name = connections[0]
+        non_empty_themes = fetch_themes_single_database(connection_name)
+        QgsMessageLog.logMessage(f'Found themes: {non_empty_themes}', 'PgMetadata', level=Qgis.Info)
+
         items = []
 
-        th_1 = PgMetadataBrowserGroupItem(self, "Theme 1", "icon.png", self.plugin)
+        code, label = non_empty_themes.popitem()
+        th_1 = PgMetadataBrowserGroupItem(self, label, "icon.png", self.plugin)
         th_1.setState(QgsDataItem.Populated)
         th_1.refresh()
         sip.transferto(th_1, self)
         items.append(th_1)
 
-        th_2 = PgMetadataBrowserGroupItem(self, "Theme 2", None, self.plugin)
+        code, label = non_empty_themes.popitem()
+        th_2 = PgMetadataBrowserGroupItem(self, label, None, self.plugin)
         th_2.setState(QgsDataItem.Populated)
         th_2.refresh()
         sip.transferto(th_2, self)
