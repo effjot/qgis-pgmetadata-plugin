@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0-gci1 - 2022-08-11
+
+* Add phone number field (contribution from @effjot Florian Jenn)
+
 ## 1.2.0-gci - 2022-04-28
 
 * Add raster support (contribution from @effjot Florian Jenn)
