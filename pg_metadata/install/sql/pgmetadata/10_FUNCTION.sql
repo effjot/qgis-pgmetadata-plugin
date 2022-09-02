@@ -3,8 +3,8 @@ BEGIN;
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.15 (Debian 10.15-1.pgdg100+1)
--- Dumped by pg_dump version 10.15 (Debian 10.15-1.pgdg100+1)
+-- Dumped from database version 11.7 (Debian 11.7-2.pgdg100+1)
+-- Dumped by pg_dump version 11.7 (Debian 11.7-2.pgdg100+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -251,8 +251,8 @@ BEGIN
         -- replace QGIS style field [% "my_field" %] by field value
         html = regexp_replace(
             html,
-            concat('\[%( )*?(")*', item.col ,'(")*( )*%\]'),
-            item.val,
+            concat('\[% *"?', item.col, '"? *%\]'),
+            replace(item.val, '\', '\\'), -- escape backslashes in substitution string (\1...\9 refer to subexpressions)
             'g'
         )
         ;
@@ -400,16 +400,16 @@ BEGIN
     -- add contacts: [% "meta_contacts" %]
     html = regexp_replace(
         html,
-        concat('\[%( )*?(")*meta_contacts(")*( )*%\]'),
-        coalesce(html_contact, ''),
+        concat('\[% *"?meta_contacts"? *%\]'),
+        coalesce(replace(html_contact, '\', '\\'), ''), -- escape backslashes in substitution string (\1...\9 refer to subexpressions)
         'g'
     );
 
     -- add links [% "meta_links" %]
     html = regexp_replace(
         html,
-        concat('\[%( )*?(")*meta_links(")*( )*%\]'),
-        coalesce(html_link, ''),
+        concat('\[% *"?meta_links"? *%\]'),
+        coalesce(replace(html_link, '\', '\\'), ''), -- escape backslashes in substitution string (\1...\9 refer to subexpressions)
         'g'
     );
 

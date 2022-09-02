@@ -2,7 +2,12 @@
 
 ## Unreleased
 
+* License - Release PgMetadata under the GNU General Public License v2.0.
+* Raise the QGIS minimum version to 3.16
 * Add raster support (contribution from @effjot Florian Jenn)
+* Fix handling of backslashes in file:// links to Windows files (contribution from @effjot Florian Jenn)
+* Add phone number field (contribution from @effjot Florian Jenn)
+* Email links are now clickable
 
 ## 1.1.1 - 2022-02-14
 

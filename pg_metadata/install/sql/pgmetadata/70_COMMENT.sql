@@ -3,8 +3,8 @@ BEGIN;
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.15 (Debian 10.15-1.pgdg100+1)
--- Dumped by pg_dump version 10.15 (Debian 10.15-1.pgdg100+1)
+-- Dumped from database version 11.7 (Debian 11.7-2.pgdg100+1)
+-- Dumped by pg_dump version 11.7 (Debian 11.7-2.pgdg100+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -97,6 +97,10 @@ COMMENT ON COLUMN pgmetadata.contact.organisation_unit IS 'Organisation unit nam
 
 -- contact.email
 COMMENT ON COLUMN pgmetadata.contact.email IS 'Email address';
+
+
+-- contact.phone
+COMMENT ON COLUMN pgmetadata.contact.phone IS 'Phone number';
 
 
 -- dataset
