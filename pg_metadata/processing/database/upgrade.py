@@ -28,6 +28,17 @@ from pg_metadata.qgis_plugin_tools.tools.version import (
 SCHEMA = 'pgmetadata'
 
 
+def available_local_migration():
+    """Get local migration file, if available. Related to available_migrations()
+    in database.py in submodule qgis_plugin_tools"""
+    upgrade_dir = plugin_path("install", "sql", "upgrade")
+    local_migration_file = os.path.join(upgrade_dir, 'local.sql')
+    if os.path.isfile(local_migration_file):
+        return local_migration_file
+    else:
+        return None
+
+
 class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
 
     CONNECTION_NAME = "CONNECTION_NAME"
@@ -121,7 +132,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         feedback.pushInfo("Current database version '{}'.".format(db_version))
 
         # Get plugin version
-        plugin_version = version()
+        plugin_version = version().split('+')[0]  # remove trailing '+xxx' local version
         if plugin_version in ["master", "dev"]:
             migrations = available_migrations(000000)
             last_migration = migrations[-1]
@@ -141,12 +152,29 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
             self.DATABASE_VERSION: plugin_version
         }
 
+        local_migration = available_local_migration()
+
         # Return if nothing to do
         if db_version == plugin_version:
-            feedback.pushInfo(tr(
-                "The database version and the plugin version are the same, version {}. There isn't any "
-                "upgrade to do.").format(plugin_version))
-            return results
+            if local_migration:
+                sql_file = os.path.join(plugin_path(), "install/sql/upgrade/{}".format(local_migration))
+                with open(sql_file, "r", encoding='utf8') as f:
+                    sql = f.read()
+                if len(sql.strip()) == 0:
+                    feedback.pushInfo("* " + local_migration + " -- " + tr("SKIPPING, EMPTY FILE"))
+                else:
+                    try:
+                        pass
+                        #connection.executeSql(sql)
+                    except QgsProviderConnectionException as e:
+                        connection.executeSql("ROLLBACK;")
+                        raise QgsProcessingException(str(e))
+                return results
+            else:
+                feedback.pushInfo(tr(
+                    "The database version and the plugin version are the same, version {}. There isn't any "
+                    "upgrade to do.").format(plugin_version))
+                return results
 
         db_version_integer = format_version_integer(db_version)
         sql_files = available_migrations(db_version_integer)
@@ -161,7 +189,8 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
                 continue
 
             try:
-                connection.executeSql(sql)
+                pass
+                #connection.executeSql(sql)
             except QgsProviderConnectionException as e:
                 connection.executeSql("ROLLBACK;")
                 raise QgsProcessingException(str(e))
@@ -172,7 +201,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
 
         self.vacuum_all_tables(connection, feedback)
 
-        self.update_database_version(connection, plugin_version)
+        #self.update_database_version(connection, plugin_version)
         feedback.pushInfo("Database upgraded to the current plugin version {}!".format(plugin_version))
 
         add_connection(connection_name)

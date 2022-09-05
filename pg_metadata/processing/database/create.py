@@ -133,6 +133,7 @@ class CreateDatabaseStructure(BaseDatabaseAlgorithm):
             "{}/60_CONSTRAINT.sql".format(SCHEMA),
             "{}/70_COMMENT.sql".format(SCHEMA),
             "{}/90_GLOSSARY.sql".format(SCHEMA),
+            "{}/95_local.sql".format(SCHEMA),
             "99_finalize_database.sql",
         ]
 

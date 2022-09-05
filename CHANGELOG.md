@@ -1,12 +1,13 @@
 # Changelog
 
-## 1.2.0-gci2 - 2022-09-05
+## 1.2.0+gci2 - 2022-09-05
 * merged with current upstream/master
+* Add German translation of administration project
 
-## 1.2.0-gci1 - 2022-08-11
+## 1.2.0+gci1 - 2022-08-11
 * Add phone number field -> merged into upstream/master
 
-## 1.2.0-gci - 2022-04-28
+## 1.2.0+gci - 2022-04-28
 * New button "Add all theme layers"
 * New field "license_attribution" for CC-by attributions, license grant numbers, etc.
 * Complete set of ISO 19115 publication frequency terms
