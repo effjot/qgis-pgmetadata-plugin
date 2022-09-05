@@ -212,7 +212,6 @@ BEGIN
 END;
 $$;
 
-
 -- FUNCTION update_postgresql_table_comment(table_schema text, table_name text, table_comment text, table_type text)
 COMMENT ON FUNCTION pgmetadata.update_postgresql_table_comment(table_schema text, table_name text, table_comment text, table_type text) IS 'Update the PostgreSQL comment of a table by giving table schema, name and comment
 Example: if you need to update the comments for all the items listed by pgmetadata.v_table_comment_from_metadata:

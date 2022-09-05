@@ -1,16 +1,24 @@
 # Changelog
 
-## 1.2.0-gci1 - 2022-08-11
+## 1.2.0-gci2 - 2022-09-05
+* merged with current upstream/master
 
-* Add phone number field (contribution from @effjot Florian Jenn)
+## 1.2.0-gci1 - 2022-08-11
+* Add phone number field -> merged into upstream/master
 
 ## 1.2.0-gci - 2022-04-28
-
-* Add raster support (contribution from @effjot Florian Jenn)
 * New button "Add all theme layers"
 * New field "license_attribution" for CC-by attributions, license grant numbers, etc.
 * Complete set of ISO 19115 publication frequency terms
-* Fix an issue with backslashes in links to Windows files getting mangled
+
+## Unreleased
+
+* License - Release PgMetadata under the GNU General Public License v2.0.
+* Raise the QGIS minimum version to 3.16
+* Add raster support (contribution from @effjot Florian Jenn)
+* Fix handling of backslashes in file:// links to Windows files (contribution from @effjot Florian Jenn)
+* Add phone number field (contribution from @effjot Florian Jenn)
+* Email links are now clickable
 
 ## 1.1.1 - 2022-02-14
 

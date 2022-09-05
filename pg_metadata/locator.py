@@ -53,7 +53,7 @@ class LocatorFilter(QgsLocatorFilter):
             return
 
         connections, message = connections_list()
-        if not connections:
+        if message or not connections:  # FIXME: log if there are messages or only when no connections?
             self.logMessage(message, Qgis.Critical)
 
         for connection in connections:
@@ -117,10 +117,7 @@ class LocatorFilter(QgsLocatorFilter):
         schema_name = result.userData['schema']
         table_name = result.userData['table']
 
-        if Qgis.QGIS_VERSION_INT < 31200:
-            table = [t for t in connection.tables(schema_name) if t.tableName() == table_name][0]
-        else:
-            table = connection.table(schema_name, table_name)
+        table = connection.table(schema_name, table_name)
 
         uri = QgsDataSourceUri(connection.uri())
         uri.setSchema(schema_name)
