@@ -39,7 +39,7 @@ DROP TABLE pgmetadata.t_glossary;
 ALTER TABLE pgmetadata.dataset ADD COLUMN IF NOT EXISTS license_attribution text;
 ALTER TABLE pgmetadata.dataset ADD COLUMN IF NOT EXISTS project_number text;
 COMMENT ON COLUMN pgmetadata.dataset.license_attribution IS 'License attribution / copyright notice';
-COMMENT ON COLUMN pgmetadata.dataset.project_number IS 'Project number';
+COMMENT ON COLUMN pgmetadata.dataset.project_number IS 'Project number(s)';
 
 
 -- Add license_attribution and project number to view v_dataset

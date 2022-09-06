@@ -178,7 +178,13 @@
     </message>
     <message>
         <source>License attribution</source>
+        <translatorcomment>lokale Ergänzung</translatorcomment>
         <translation>Lizenzhinweis</translation>
+    </message>
+    <message>
+        <source>Project number(s)</source>
+        <translatorcomment>lokale Ergänzung</translatorcomment>
+        <translation>GCI-Projektnummer(n)</translation>
     </message>
 </context>
 <context>

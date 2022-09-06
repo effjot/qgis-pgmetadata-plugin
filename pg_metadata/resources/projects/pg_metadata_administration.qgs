@@ -627,7 +627,7 @@ def my_form_open(dialog, layer, feature):
       </renderer-v2>
       <labeling type="simple">
         <settings calloutType="simple">
-          <text-style textOrientation="horizontal" fontUnderline="0" textOpacity="1" fontKerning="1" multilineHeight="1" allowHtml="0" isExpression="1" fontStrikeout="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" namedStyle="Regular" fontFamily="Ubuntu" fontSizeUnit="Point" textColor="0,0,0,255" fontLetterSpacing="0" fontSize="8" fontWeight="50" fieldName="wordwrap(title, 15, ' ')" blendMode="0" fontWordSpacing="0" fontItalic="0" capitalization="0" useSubstitutions="0" previewBkgrdColor="255,255,255,255">
+          <text-style textOrientation="horizontal" fontUnderline="0" textOpacity="1" fontKerning="1" multilineHeight="1" allowHtml="0" isExpression="1" fontStrikeout="0" fontSizeMapUnitScale="3x:0,0,0,0,0,0" namedStyle="Regular" fontFamily="MS Shell Dlg 2" fontSizeUnit="Point" textColor="0,0,0,255" fontLetterSpacing="0" fontSize="8" fontWeight="50" fieldName="wordwrap(title, 15, ' ')" blendMode="0" fontWordSpacing="0" fontItalic="0" capitalization="0" useSubstitutions="0" previewBkgrdColor="255,255,255,255">
             <text-buffer bufferSize="0.7" bufferSizeUnits="MM" bufferBlendMode="0" bufferOpacity="1" bufferDraw="1" bufferSizeMapUnitScale="3x:0,0,0,0,0,0" bufferColor="255,255,255,255" bufferNoFill="1" bufferJoinStyle="128"/>
             <text-mask maskSizeMapUnitScale="3x:0,0,0,0,0,0" maskJoinStyle="128" maskEnabled="0" maskSize="0" maskOpacity="1" maskType="0" maskedSymbolLayers="" maskSizeUnits="MM"/>
             <background shapeRotationType="0" shapeRadiiMapUnitScale="3x:0,0,0,0,0,0" shapeOpacity="1" shapeBorderColor="128,128,128,255" shapeDraw="0" shapeRadiiX="0" shapeJoinStyle="64" shapeRadiiY="0" shapeSizeX="0" shapeType="0" shapeSizeType="0" shapeBorderWidth="0" shapeBorderWidthUnit="MM" shapeFillColor="255,255,255,255" shapeRotation="0" shapeSizeY="0" shapeOffsetY="0" shapeRadiiUnit="MM" shapeSizeUnit="MM" shapeBorderWidthMapUnitScale="3x:0,0,0,0,0,0" shapeOffsetUnit="MM" shapeSVGFile="" shapeOffsetX="0" shapeBlendMode="0" shapeOffsetMapUnitScale="3x:0,0,0,0,0,0" shapeSizeMapUnitScale="3x:0,0,0,0,0,0">
@@ -717,7 +717,7 @@ def my_form_open(dialog, layer, feature):
       <layerOpacity>1</layerOpacity>
       <SingleCategoryDiagramRenderer attributeLegend="1" diagramType="Histogram">
         <DiagramCategory scaleDependency="Area" width="15" penAlpha="255" sizeType="MM" spacingUnitScale="3x:0,0,0,0,0,0" lineSizeScale="3x:0,0,0,0,0,0" penWidth="0" backgroundAlpha="255" maxScaleDenominator="1e+08" enabled="0" height="15" penColor="#000000" barWidth="5" spacingUnit="MM" lineSizeType="MM" labelPlacementMethod="XHeight" opacity="1" backgroundColor="#ffffff" spacing="0" sizeScale="3x:0,0,0,0,0,0" diagramOrientation="Up" minScaleDenominator="0" rotationOffset="270" showAxis="0" direction="1" scaleBasedVisibility="0" minimumSize="0">
-          <fontProperties description="Ubuntu,11,-1,5,50,0,0,0,0,0" style=""/>
+          <fontProperties description="MS Shell Dlg 2,11,-1,5,50,0,0,0,0,0" style=""/>
           <attribute field="" color="#000000" label=""/>
           <axisSymbol>
             <symbol force_rhr="0" type="line" name="" clip_to_extent="1" alpha="1">
@@ -1116,6 +1116,26 @@ def my_form_open(dialog, layer, feature):
             </config>
           </editWidget>
         </field>
+        <field configurationFlags="None" name="license_attribution">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
+        <field configurationFlags="None" name="project_number">
+          <editWidget type="TextEdit">
+            <config>
+              <Option type="Map">
+                <Option value="false" type="bool" name="IsMultiline"/>
+                <Option value="false" type="bool" name="UseHtml"/>
+              </Option>
+            </config>
+          </editWidget>
+        </field>
       </fieldConfiguration>
       <aliases>
         <alias field="id" name="Id" index="0"/>
@@ -1143,6 +1163,7 @@ def my_form_open(dialog, layer, feature):
         <alias field="data_last_update" name="Data last update" index="22"/>
         <alias field="themes" name="Themes" index="23"/>
         <alias field="license_attribution" index="24" name="License attribution"></alias>
+        <alias index="25" name="Project number(s)" field="project_number"/>
       </aliases>
       <defaults>
         <default expression="" field="id" applyOnUpdate="0"/>
@@ -1159,7 +1180,6 @@ def my_form_open(dialog, layer, feature):
         <default expression="" field="publication_date" applyOnUpdate="0"/>
         <default expression="" field="publication_frequency" applyOnUpdate="0"/>
         <default expression="" field="license" applyOnUpdate="0"/>
-        <default expression="" field="license_attribution" applyOnUpdate="0"/>
         <default expression="" field="confidentiality" applyOnUpdate="0"/>
         <default expression="" field="feature_count" applyOnUpdate="0"/>
         <default expression="" field="geometry_type" applyOnUpdate="0"/>
@@ -1170,6 +1190,8 @@ def my_form_open(dialog, layer, feature):
         <default expression="now()" field="update_date" applyOnUpdate="1"/>
         <default expression="" field="data_last_update" applyOnUpdate="0"/>
         <default expression="" field="themes" applyOnUpdate="0"/>
+        <default expression="" field="license_attribution" applyOnUpdate="0"/>
+        <default expression="" field="project_number" applyOnUpdate="0"/>
       </defaults>
       <constraints>
         <constraint unique_strength="1" constraints="3" field="id" exp_strength="0" notnull_strength="2"/>
@@ -1186,7 +1208,6 @@ def my_form_open(dialog, layer, feature):
         <constraint unique_strength="0" constraints="0" field="publication_date" exp_strength="0" notnull_strength="0"/>
         <constraint unique_strength="0" constraints="0" field="publication_frequency" exp_strength="0" notnull_strength="0"/>
         <constraint unique_strength="0" constraints="0" field="license" exp_strength="0" notnull_strength="0"/>
-        <constraint unique_strength="0" constraints="0" field="license_attribution" exp_strength="0" notnull_strength="0"/>
         <constraint unique_strength="0" constraints="0" field="confidentiality" exp_strength="0" notnull_strength="0"/>
         <constraint unique_strength="0" constraints="0" field="feature_count" exp_strength="0" notnull_strength="0"/>
         <constraint unique_strength="0" constraints="0" field="geometry_type" exp_strength="0" notnull_strength="0"/>
@@ -1197,6 +1218,8 @@ def my_form_open(dialog, layer, feature):
         <constraint unique_strength="0" constraints="0" field="update_date" exp_strength="0" notnull_strength="0"/>
         <constraint unique_strength="0" constraints="0" field="data_last_update" exp_strength="0" notnull_strength="0"/>
         <constraint unique_strength="0" constraints="0" field="themes" exp_strength="0" notnull_strength="0"/>
+        <constraint notnull_strength="0" constraints="0" unique_strength="0" field="license_attribution" exp_strength="0"/>
+        <constraint notnull_strength="0" constraints="0" unique_strength="0" field="project_number" exp_strength="0"/>
       </constraints>
       <constraintExpressions>
         <constraint field="id" desc="" exp=""/>
@@ -1213,7 +1236,6 @@ def my_form_open(dialog, layer, feature):
         <constraint field="publication_date" desc="" exp=""/>
         <constraint field="publication_frequency" desc="" exp=""/>
         <constraint field="license" desc="" exp=""/>
-        <constraint field="license_attribution" desc="" exp=""/>
         <constraint field="confidentiality" desc="" exp=""/>
         <constraint field="feature_count" desc="" exp=""/>
         <constraint field="geometry_type" desc="" exp=""/>
@@ -1224,6 +1246,8 @@ def my_form_open(dialog, layer, feature):
         <constraint field="update_date" desc="" exp=""/>
         <constraint field="data_last_update" desc="" exp=""/>
         <constraint field="themes" desc="" exp=""/>
+        <constraint field="license_attribution" desc="" exp=""/>
+        <constraint field="project_number" desc="" exp=""/>
       </constraintExpressions>
       <expressionfields/>
       <attributeactions>
@@ -1245,7 +1269,6 @@ def my_form_open(dialog, layer, feature):
           <column type="field" name="publication_date" width="-1" hidden="0"/>
           <column type="field" name="publication_frequency" width="-1" hidden="0"/>
           <column type="field" name="license" width="-1" hidden="0"/>
-          <column type="field" name="license_attribution" width="-1" hidden="0"/>
           <column type="field" name="confidentiality" width="-1" hidden="0"/>
           <column type="field" name="feature_count" width="-1" hidden="0"/>
           <column type="field" name="geometry_type" width="-1" hidden="0"/>
@@ -1257,6 +1280,8 @@ def my_form_open(dialog, layer, feature):
           <column type="actions" width="-1" hidden="1"/>
           <column type="field" name="data_last_update" width="-1" hidden="0"/>
           <column type="field" name="themes" width="-1" hidden="0"/>
+          <column type="field" name="license_attribution" width="-1" hidden="0"/>
+          <column type="field" name="project_number" width="-1" hidden="0"/>
         </columns>
       </attributetableconfig>
       <conditionalstyles>
@@ -1299,6 +1324,7 @@ def my_form_open(dialog, layer, feature):
             <attributeEditorField name="categories" index="6" showLabel="1"/>
             <attributeEditorField name="themes" index="23" showLabel="1"/>
             <attributeEditorField name="keywords" index="7" showLabel="1"/>
+            <attributeEditorField name="project_number" index="25" showLabel="1"/>
             <attributeEditorField name="data_last_update" index="22" showLabel="1"/>
           </attributeEditorContainer>
           <attributeEditorContainer groupBox="1" name="Publication" visibilityExpressionEnabled="0" showLabel="1" columnCount="1" visibilityExpression="">
@@ -1357,6 +1383,7 @@ def my_form_open(dialog, layer, feature):
         <field editable="1" name="title"/>
         <field editable="0" name="uid"/>
         <field editable="0" name="update_date"/>
+        <field editable="1" name="project_number"/>
       </editable>
       <labelOnTop>
         <field name="abstract" labelOnTop="0"/>
@@ -1385,6 +1412,7 @@ def my_form_open(dialog, layer, feature):
         <field name="title" labelOnTop="0"/>
         <field name="uid" labelOnTop="0"/>
         <field name="update_date" labelOnTop="0"/>
+        <field name="project_number" labelOnTop="0"/>
       </labelOnTop>
       <dataDefinedFieldProperties/>
       <widgets>
