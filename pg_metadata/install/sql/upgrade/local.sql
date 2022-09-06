@@ -45,7 +45,7 @@ COMMENT ON COLUMN pgmetadata.dataset.project_number IS 'Project number';
 -- Add license_attribution and project number to view v_dataset
 -- Change scale number separator to colon (e.g. 1:1000)
 
-CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
+CREATE VIEW pgmetadata.v_dataset AS
  WITH glossary AS (
          SELECT COALESCE(current_setting('pgmetadata.locale'::text, true), 'en'::text) AS locale,
             v_glossary.dict
@@ -132,6 +132,7 @@ CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
     ss.publication_date,
     ss.publication_frequency,
     ss.license,
+    ss.project_number,
     ss.confidentiality,
     ss.feature_count,
     ss.geometry_type,
