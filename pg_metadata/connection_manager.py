@@ -4,7 +4,7 @@ __email__ = "info@3liz.org"
 
 import logging
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from qgis.core import (
     Qgis,
@@ -24,6 +24,7 @@ CON_SEPARATOR = '!!::!!'  # separate connection names in settings string; same a
 def check_pgmetadata_is_installed(connection_name: str) -> bool:
     """ Test if a given connection has PgMetadata installed. """
 
+    LOGGER.info(f'Connlist: {connections_list()}')
     if connection_name not in connections_list()[0]:
         return False
 
@@ -130,12 +131,12 @@ def validate_connections_names() -> Tuple[List[str], List[str]]:
     return valid, invalid
 
 
-def connections_list() -> Tuple[Tuple, str]:
+def connections_list() -> Tuple[List(str), Union(str, None)]:
     """ List of available connections to PostgreSQL database.
 
     Returns a tuple:
-        * list of connections
-        * list of connection error messages
+        * list of connection names
+        * string with all connection error messages, if any
     """
     migrate_from_global_variables_to_pgmetadata_section()
     migrate_connection_name_separator()
@@ -148,7 +149,7 @@ def connections_list() -> Tuple[Tuple, str]:
             "You must use the 'Set Connections' algorithm in the Processing toolbox. The plugin must be "
             "aware about the database to use. Multiple databases can be set."
         )
-        return tuple(), message
+        return [], message
 
     connections = list()
     messages = list()
@@ -176,4 +177,4 @@ def connections_list() -> Tuple[Tuple, str]:
     else:
         message = None
 
-    return tuple(connections), message
+    return connections, message
