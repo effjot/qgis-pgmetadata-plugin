@@ -154,8 +154,6 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         # Run local migration file if database is up to date to the release version
         local_migration = available_local_migration()
         if db_version == plugin_version and local_migration:
-            #sql_file = os.path.join(plugin_path(), "install/sql/upgrade/{}".format(local_migration))
-            feedback.pushInfo('file exists: {}'.format(os.path.isfile(local_migration)))
             feedback.pushInfo(tr("Running local migration from {}.").format(local_migration))
             with open(local_migration, "r", encoding='utf8') as f:
                 sql = f.read()
