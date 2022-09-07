@@ -3,13 +3,17 @@ BEGIN;
 -- GLOSSARY
 
 -- additional publication frequencies
-
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (137, 'dataset.publication_frequency', 'QUA', 'Quarterly', 'Update data every three months', 4, NULL, NULL, NULL, NULL, NULL, NULL, 'Vierteljährlich', 'Daten werden vierteljährlich aktualisiert') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (138, 'dataset.publication_frequency', 'FTN', 'Fortnightly', 'Update data every two weeks', 6, NULL, NULL, NULL, NULL, NULL, NULL, 'Zweiwöchentlich', 'Daten werden vierzehntägig aktualisiert') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (139, 'dataset.publication_frequency', 'CON', 'Continual', 'Data is repeatedly and frequently updated', 9, NULL, NULL, NULL, NULL, NULL, NULL, 'Kontinuierlich', 'Daten werden ständig aktualisiert') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (140, 'dataset.publication_frequency', 'UNK', 'Unknown', 'Frequency of maintenance for the data is not known', 12, NULL, NULL, NULL, NULL, NULL, NULL, 'Unbekannt', 'Ein Aktualisierungsintervall ist nicht bekannt') ON CONFLICT DO NOTHING;
 
-SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 140, true);
+-- additional link types
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('link.type', 'directory', 'a directory', 'Directory on the local filesystem', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'ein Ordner', 'Ein Ordner auf dem lokalen Dateisystem') ON CONFLICT DO NOTHING;
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en) VALUES ('link.mime', 'directory', 'inode/directory', 'directory (not an official MIME type') ON CONFLICT DO NOTHING;
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('link.type', 'ESRI:SHP', 'ESRI Shapefile', 'Vector layer in Shapefile format (.shp)', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'ESRI Shapefile', 'Vektorlayer im Shapefile-Format (.shp)') ON CONFLICT DO NOTHING;
+
+SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 143, true);
 
 
 -- new item_order for existing publication frequencies
