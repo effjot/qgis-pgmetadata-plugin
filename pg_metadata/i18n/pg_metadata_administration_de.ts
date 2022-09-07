@@ -31,7 +31,7 @@
         <translation>E-Mail</translation>
     </message>
     <message>
-        <source>phone</source>
+        <source>Phone</source>
         <translation>Telefon</translation>
     </message>
 </context>
