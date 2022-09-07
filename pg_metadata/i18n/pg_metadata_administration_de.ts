@@ -12,7 +12,7 @@
     <name>project:layers:contact_640d326a_25a7_4b9c_8878_42d1201a8198:fieldaliases</name>
     <message>
         <source>Id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Name</source>
@@ -38,15 +38,15 @@
 <context>
     <name>project:layers:dataset_contact_ff2bb406_5b18_4ab7_9fc0_3a25c3aa9675</name>
     <message>
-        <source>Dataset ↔ Contact</source>
-        <translation>Metadaten (Dataset) ↔ Kontakt</translation>
+        <source>Dataset &lt;-> Contact</source>
+        <translation>Metadaten (dataset) ↔ Kontakt</translation>
     </message>
 </context>
 <context>
     <name>project:layers:dataset_contact_ff2bb406_5b18_4ab7_9fc0_3a25c3aa9675:fieldaliases</name>
     <message>
         <source>Id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Contact</source>
@@ -72,18 +72,18 @@
     <name>project:layers:dataset_00c9da4d_d717_48cc_a848_0d4544b019fd</name>
     <message>
         <source>Dataset</source>
-        <translation>Metadaten (Dataset)</translation>
+        <translation>Metadaten (dataset)</translation>
     </message>
 </context>
 <context>
     <name>project:layers:dataset_00c9da4d_d717_48cc_a848_0d4544b019fd:fieldaliases</name>
     <message>
         <source>Id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Unique ID</source>
-        <translation type="unfinished"></translation>
+        <translation>Unique ID</translation>
     </message>
     <message>
         <source>Table</source>
@@ -278,7 +278,7 @@
     <name>project:layers:link_6157b282_9882_44f3_b6a1_c133f5595d2a:fieldaliases</name>
     <message>
         <source>Id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Name of the ressource</source>
@@ -310,7 +310,7 @@
     </message>
     <message>
         <source>fk_id_dataset</source>
-        <translation type="unfinished"></translation>
+        <translation>fk_id_dataset</translation>
     </message>
 </context>
 <context>
@@ -338,7 +338,7 @@
     <name>project:layers:html_template_e9cca240_a640_4a7c_a9d0_a181beb9797e:fieldaliases</name>
     <message>
         <source>Id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Section</source>
@@ -426,7 +426,7 @@
     <name>project:layers:theme_3d260140_3e41_4dbe_8e79_813f3f5d3d50:fieldaliases</name>
     <message>
         <source>id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Code</source>
@@ -452,7 +452,7 @@
     <name>project:layers:v_table_list_48c78797_5376_47b8_90e0_8c4f8236fa44:fieldaliases</name>
     <message>
         <source>id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Schema</source>
@@ -474,7 +474,7 @@
     <name>project:layers:v_schema_list_140f3a29_ae94_480c_932c_fb47bdad292c:fieldaliases</name>
     <message>
         <source>id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Schema</source>
@@ -492,15 +492,15 @@
     <name>project:layers:v_valid_dataset_4e46ef23_a5aa_441f_b21a_92bb573cbdfd:fieldaliases</name>
     <message>
         <source>id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>schema_name</source>
-        <translation type="unfinished"></translation>
+        <translation>Schema</translation>
     </message>
     <message>
         <source>table_name</source>
-        <translation type="unfinished"></translation>
+        <translation>Tabelle</translation>
     </message>
 </context>
 <context>
@@ -514,23 +514,23 @@
     <name>project:layers:v_table_comment_from_metadata_d6be195f_86d0_4ef6_af4d_d1fef8a4b7f7:fieldaliases</name>
     <message>
         <source>id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>table_schema</source>
-        <translation type="unfinished"></translation>
+        <translation>Schema</translation>
     </message>
     <message>
         <source>table_name</source>
-        <translation type="unfinished"></translation>
+        <translation>Tabelle</translation>
     </message>
     <message>
         <source>table_comment</source>
-        <translation type="unfinished"></translation>
+        <translation>Tabellen-Kommentar</translation>
     </message>
     <message>
         <source>table_type</source>
-        <translation type="unfinished"></translation>
+        <translation>Tabellen-Typ</translation>
     </message>
 </context>
 <context>
@@ -544,7 +544,7 @@
     <name>project:layers:v_orphan_tables_33b5eba9_96d1_442a_a32e_90a10c6fd2e5:fieldaliases</name>
     <message>
         <source>id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Schema</source>
@@ -566,7 +566,7 @@
     <name>project:layers:v_orphan_dataset_items_0fbfb83f_0c98_4391_bf51_8b5d8a362a73:fieldaliases</name>
     <message>
         <source>id</source>
-        <translation type="unfinished"></translation>
+        <translation>ID</translation>
     </message>
     <message>
         <source>Schema</source>

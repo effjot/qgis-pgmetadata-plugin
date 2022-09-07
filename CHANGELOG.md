@@ -1,8 +1,9 @@
 # Changelog
 
-## 1.2.0+gci2 - 2022-09-05
+## 1.2.0+gci2 - 2022-09-07
 * merged with current upstream/master
 * Add German translation of administration project
+* Separate create and upgrade SQL files for local changes to database structure
 
 ## 1.2.0+gci1 - 2022-08-11
 * Add phone number field -> merged into upstream/master

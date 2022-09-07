@@ -1436,7 +1436,7 @@ def my_form_open(dialog, layer, feature):
       <keywordList>
         <value></value>
       </keywordList>
-      <layername>Dataset ↔ Contact</layername>
+      <layername>Dataset &lt;-> Contact</layername>
       <srs>
         <spatialrefsys>
           <wkt></wkt>
