@@ -175,7 +175,7 @@ class CreateDatabaseStructure(BaseDatabaseAlgorithm):
 
         # Add version
         if run_migration or not dev_version:
-            metadata_version = plugin_version
+            metadata_version = plugin_version.split('+')[0]
         else:
             migrations = available_migrations(000000)
             last_migration = migrations[-1]
