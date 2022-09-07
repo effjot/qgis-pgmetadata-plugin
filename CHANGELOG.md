@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.1+gci1 - 2022-09-07
+* Merged with current upstream/master (release 1.2.1)
+from 1.2.0gci:
+* New field "project_number"
+* Add German translation of administration project
+* Separate create and upgrade SQL files for local changes to database structure
+* New button "Add all theme layers"
+* New field "license_attribution" for CC-by attributions, license grant numbers, etc.
+* Complete set of ISO 19115 publication frequency terms
+
 ## 1.2.0+gci2 - 2022-09-07
 * Merged with current upstream/master (release 1.2.0)
 * New field "project_number"
@@ -15,6 +25,11 @@
 * Complete set of ISO 19115 publication frequency terms
 
 ## Unreleased
+
+## 1.2.1 - 2022-09-07
+
+* Fix a warning about invalid database
+* Add the phone field to "Contacts" in the administration project
 
 ## 1.2.0 - 2022-09-05
 
