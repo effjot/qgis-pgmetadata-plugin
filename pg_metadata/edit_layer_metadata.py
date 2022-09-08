@@ -34,7 +34,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         table = datasource_uri.table()
         schema = datasource_uri.schema()
         LOGGER.critical(f'Edit layer type {datasource_uri.table()}, {connection}')
-        sql = f"select title, abstract from pgmetadata.dataset where schema_name = '{schema}' and table_name = '{table}'"
+        sql = f"select title, abstract, project_number from pgmetadata.dataset where schema_name = '{schema}' and table_name = '{table}'"
         try:
             data = connection.executeSql(sql)
         except QgsProviderConnectionException as e:
@@ -43,6 +43,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         self.textbox_title.setPlainText(data[0][0])
         self.textbox_abstract.setPlainText(data[0][1])
+        self.textbox_project_number.setPlainText(data[0][2])
         
         self.show()
         result = self.exec_()
@@ -51,7 +52,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
         title = self.textbox_title.toPlainText()
         abstract = self.textbox_abstract.toPlainText()
-        sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}' "
+        project_number = self.textbox_project_number.toPlainText()
+        sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}' "
                f"WHERE schema_name = '{schema}' and table_name = '{table}'")
         try:
             connection.executeSql(sql)

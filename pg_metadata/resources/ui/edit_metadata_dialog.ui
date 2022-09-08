@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>272</width>
-    <height>165</height>
+    <width>514</width>
+    <height>256</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>120</y>
+     <x>140</x>
+     <y>190</y>
      <width>171</width>
      <height>32</height>
     </rect>
@@ -32,9 +32,9 @@
   <widget class="QPlainTextEdit" name="textbox_title">
    <property name="geometry">
     <rect>
-     <x>100</x>
+     <x>140</x>
      <y>10</y>
-     <width>131</width>
+     <width>351</width>
      <height>31</height>
     </rect>
    </property>
@@ -42,17 +42,17 @@
   <widget class="QPlainTextEdit" name="textbox_abstract">
    <property name="geometry">
     <rect>
-     <x>100</x>
+     <x>140</x>
      <y>60</y>
-     <width>131</width>
-     <height>31</height>
+     <width>351</width>
+     <height>51</height>
     </rect>
    </property>
   </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>10</x>
      <y>20</y>
      <width>47</width>
      <height>13</height>
@@ -65,14 +65,37 @@
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>70</y>
+     <x>10</x>
+     <y>60</y>
      <width>71</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
     <string>Beschreibung</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>136</y>
+     <width>121</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>GCI-Projektnummer(n)</string>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="textbox_project_number">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>130</y>
+     <width>351</width>
+     <height>31</height>
+    </rect>
    </property>
   </widget>
  </widget>
