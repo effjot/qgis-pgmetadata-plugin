@@ -41,6 +41,7 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.utils import iface
 
+from pg_metadata.edit_layer_metadata import PgMetadataLayerEditor
 from pg_metadata.connection_manager import (
     check_pgmetadata_is_installed,
     connections_list,
@@ -98,6 +99,12 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         self.theme_layers.setToolTip(tr("Add all layers of a theme"))
         self.theme_layers.setIcon(QgsApplication.getThemeIcon('/mActionAddGroup.svg'))
         self.theme_layers.clicked.connect(self.add_theme_layers)
+
+        # Add edit layer button
+        self.edit_layer.setText('')
+        self.edit_layer.setToolTip(tr("Open dialog window to edit metadata"))
+        self.edit_layer.setIcon(QgsApplication.getThemeIcon('/mActionToggleEditing.svg'))
+        self.edit_layer.clicked.connect(PgMetadataLayerEditor)
 
         # Settings menu
         self.config.setAutoRaise(True)
