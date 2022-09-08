@@ -101,10 +101,11 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         self.theme_layers.clicked.connect(self.add_theme_layers)
 
         # Add edit layer button
+        self.edit_dialog = PgMetadataLayerEditor()
         self.edit_layer.setText('')
         self.edit_layer.setToolTip(tr("Open dialog window to edit metadata"))
         self.edit_layer.setIcon(QgsApplication.getThemeIcon('/mActionToggleEditing.svg'))
-        self.edit_layer.clicked.connect(PgMetadataLayerEditor)
+        self.edit_layer.clicked.connect(self.open_edit_dialog)
 
         # Settings menu
         self.config.setAutoRaise(True)
@@ -325,7 +326,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             self.save_button.setEnabled(True)
             self.current_datasource_uri = uri
             self.current_connection = connection
-
+            
             break
 
         else:
@@ -484,6 +485,10 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         iface.messageBar().pushMessage(tr("{n} layers from theme “{theme}” added").format(n=len(layers),
                                                                                           theme=theme),
                                        level=Qgis.Info)
+
+    def open_edit_dialog(self):
+        #LOGGER.critical(f'oprn Edit layer type {type(self.current_datasource_uri)}, {type(self.current_connection)}')
+        self.edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
 
     @staticmethod
     def open_external_help():
