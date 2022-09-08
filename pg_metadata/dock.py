@@ -103,6 +103,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         # Add edit layer button
         self.edit_dialog = PgMetadataLayerEditor()
         self.edit_layer.setText('')
+        self.edit_layer.setEnabled(False)
         self.edit_layer.setToolTip(tr("Open dialog window to edit metadata"))
         self.edit_layer.setIcon(QgsApplication.getThemeIcon('/mActionToggleEditing.svg'))
         self.edit_layer.clicked.connect(self.open_edit_dialog)
@@ -262,6 +263,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
     def layer_changed(self, layer):
         """ When the layer has changed in the legend, we must check this new layer. """
         self.save_button.setEnabled(False)
+        self.edit_layer.setEnabled(False)
         self.current_datasource_uri = None
         self.current_connection = None
 
@@ -324,6 +326,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
 
             self.set_html_content(body=data[0][0])
             self.save_button.setEnabled(True)
+            self.edit_layer.setEnabled(True)
             self.current_datasource_uri = uri
             self.current_connection = connection
             
@@ -486,9 +489,11 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                                                                                           theme=theme),
                                        level=Qgis.Info)
 
-    def open_edit_dialog(self):
+    def open_edit_dialog(self, layer):
         #LOGGER.critical(f'oprn Edit layer type {type(self.current_datasource_uri)}, {type(self.current_connection)}')
-        self.edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
+        updated = self.edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
+        if updated:
+            self.layer_changed()
 
     @staticmethod
     def open_external_help():
