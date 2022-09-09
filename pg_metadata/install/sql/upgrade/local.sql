@@ -163,4 +163,17 @@ CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
 COMMENT ON VIEW pgmetadata.v_dataset IS 'Formatted version of dataset data, with all the codes replaced by corresponding labels taken from pgmetadata.glossary. Used in the function in charge of building the HTML metadata content.';
 
 
+-- translated glossary for attribute forms in admin project
+create or replace view pgmetadata.v_glossary_translation_de as
+select id, field, code, item_order, coalesce(label_de, label_en) as label, coalesce(description_de, description_en) as description
+from pgmetadata.glossary order by field, code, item_order;
+
+create or replace view pgmetadata.v_glossary_translation_en as
+select id, field, code, item_order, label_en as label, description_en as description
+from pgmetadata.glossary order by field, code, item_order;
+
+comment on view pgmetadata.v_glossary_translation_de is 'Translation of glossary labels and descriptions, with fallback to English if terms are not translated';
+
+
+
 COMMIT;
