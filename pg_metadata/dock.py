@@ -493,7 +493,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         #LOGGER.critical(f'oprn Edit layer type {type(self.current_datasource_uri)}, {type(self.current_connection)}')
         updated = self.edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
         if updated:
-            self.layer_changed()
+            self.layer_changed(layer)
 
     @staticmethod
     def open_external_help():
