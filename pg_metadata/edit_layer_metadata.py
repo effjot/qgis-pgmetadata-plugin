@@ -22,6 +22,17 @@ def postgres_array_to_list(s: str) -> list[str]:
     return s[1:-1].split(',')
 
 
+def list_to_postgres_array(lst: list[str]) -> str:
+    if not lst:
+        return "array[]"
+    l = ["'" + element + "'" for element in lst]
+    return 'array[' + ','.join(l) + ']'  #TODO ergibt SQL-Syntaxfehler
+
+
+def dict_reverse_lookup(dictionary: dict, values: list) -> list:
+    return [key for key, val in dictionary.items() if val in values]
+
+
 def get_glossary(connection, field: str) -> OrderedDict:
     sql = f"SELECT code, label_de FROM pgmetadata.glossary WHERE field = '{field}' ORDER BY item_order"
     try:
@@ -77,10 +88,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         abstract = self.textbox_abstract.toPlainText()
         project_number = self.textbox_project_number.toPlainText()
         keywords = self.textbox_keywords.toPlainText()
-        themes = self.textbox_themes.toPlainText()
+        #themes = self.textbox_themes.toPlainText()
+        
+        new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
+        new_categories_array = list_to_postgres_array(new_categories_keys)
         
         sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}', "
-               f" keywords = '{keywords}', themes = '{themes}', "
+               f" keywords = '{keywords}', categories = {new_categories_array} "
                f"WHERE schema_name = '{schema}' and table_name = '{table}'")
         try:
             connection.executeSql(sql)
