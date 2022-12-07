@@ -1,9 +1,11 @@
 # Changelog
 
-## 1.2.1+gci2 - 2022-12-07
+## Unreleased
+
+## 1.2.2-gci2 - 2022-12-07
 * Localisation of scale fraction
 
-## 1.2.1+gci1 - 2022-09-07
+## 1.2.2-gci1 - 2022-09-07
 * Merged with current upstream/master (release 1.2.1)
 from 1.2.0gci:
 * New field "project_number"
@@ -26,8 +28,6 @@ from 1.2.0gci:
 * New button "Add all theme layers"
 * New field "license_attribution" for CC-by attributions, license grant numbers, etc.
 * Complete set of ISO 19115 publication frequency terms
-
-## Unreleased
 
 ## 1.2.1 - 2022-09-07
 
