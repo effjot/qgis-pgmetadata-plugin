@@ -30,8 +30,8 @@ SCHEMA = 'pgmetadata'
 def available_local_migration():
     """Get local migration file, if available. Related to available_migrations()
     in database.py in submodule qgis_plugin_tools"""
-    upgrade_dir = plugin_path("install", "sql", "upgrade")
-    local_migration_file = os.path.join(upgrade_dir, 'local.sql')
+    upgrade_dir = plugin_path("install", "sql", "pgmetadata")  # FIXME: can’t put it in upgrade folder because available_migrations breaks on parsing version number
+    local_migration_file = os.path.join(upgrade_dir, '95_local.sql')  # SQL for install and upgrade are the same
     if os.path.isfile(local_migration_file):
         return local_migration_file
     else:
@@ -131,7 +131,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         feedback.pushInfo("Current database version '{}'.".format(db_version))
 
         # Get plugin version
-        plugin_version = version().split('+')[0]  # remove trailing '+xxx' local version
+        plugin_version = version().split('-')[0]  # remove trailing '-xxx' local/prerelease version
         if plugin_version in ["master", "dev"]:
             migrations = available_migrations(000000)
             last_migration = migrations[-1]

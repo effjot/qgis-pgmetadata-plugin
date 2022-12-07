@@ -24,7 +24,7 @@ INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_ord
 INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('contact.contact_role', 'GA', 'GIS Administrator', 'Person or party who can aid with GIS-related issues', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'GIS-technischer Ansprechpartner', 'Person oder Stelle, die bei GIS-technischen Angelegenheiten weiterhelfen kann') ON CONFLICT DO NOTHING;
 
 -- localisation for left-hand side of scale fractions
-INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('display_settings', 'scale_fraction', '1 : ', NULL, NULL, '1/', NULL, NULL, NULL, NULL, NULL, '1 : ', NULL) ON CONFLICT DO NOTHING;
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('display_settings', 'scale_fraction', '1 : ', NULL, NULL, '1/', NULL, NULL, NULL, NULL, NULL, '1 : ', NULL) ON CONFLICT DO NOTHING;
 
 SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 150, true);
 
