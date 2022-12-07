@@ -19,7 +19,10 @@ INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_ord
 INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('contact.contact_role', 'WA', 'WMS/WFS Administrator', 'Person or party who can aid with WMS/WFS issues', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'WMS/WFS-Ansprechpartner', 'Person oder Stelle, die bei WMS/WFS-Problemen weiterhelfen kann') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('contact.contact_role', 'GA', 'GIS Administrator', 'Person or party who can aid with GIS-related issues', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'WMS/WFS-Ansprechpartner', 'Person oder Stelle, die in allen GIS technischen Angelegenheiten weiterhelfen kann') ON CONFLICT DO NOTHING;
 
-SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 147, true);
+-- localisation for left-hand side of scale fractions
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('display_settings', 'scale_fraction', '1 : ', NULL, NULL, '1/', NULL, NULL, NULL, NULL, NULL, '1 : ', NULL) ON CONFLICT DO NOTHING;
+
+SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 148, true);
 
 
 -- new item_order for existing publication frequencies
@@ -106,8 +109,8 @@ CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
             gtheme.label AS theme,
             s.keywords,
             s.spatial_level,
-            ('1 : '::text || s.minimum_optimal_scale) AS minimum_optimal_scale,
-            ('1 : '::text || s.maximum_optimal_scale) AS maximum_optimal_scale,
+            (((((glossary.dict -> 'display_settings'::text) -> 'scale_fraction'::text) -> 'label'::text) ->> glossary.locale) || s.minimum_optimal_scale) AS minimum_optimal_scale,
+            (((((glossary.dict -> 'display_settings'::text) -> 'scale_fraction'::text) -> 'label'::text) ->> glossary.locale) || s.maximum_optimal_scale) AS maximum_optimal_scale,
             s.publication_date,
             ((((glossary.dict -> 'dataset.publication_frequency'::text) -> s.publication_frequency) -> 'label'::text) ->> glossary.locale) AS publication_frequency,
             ((((glossary.dict -> 'dataset.license'::text) -> s.license) -> 'label'::text) ->> glossary.locale) AS license,
