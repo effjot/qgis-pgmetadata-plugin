@@ -21,7 +21,6 @@ from qgis.core import (
     QgsProject,
     QgsProviderConnectionException,
     QgsProviderRegistry,
-    QgsRasterLayer,
     QgsSettings,
     QgsVectorLayer,
     QgsRasterLayer,
