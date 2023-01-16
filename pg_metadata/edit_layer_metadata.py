@@ -88,9 +88,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.textbox_abstract.setPlainText(data[0][1])
         self.textbox_project_number.setPlainText(data[0][2])
         self.textbox_keywords.setPlainText(str(data[0][4]))
-        self.textbox_minimum_optimal_scale.setPlainText(str(data[0][6]))
-        self.textbox_maximum_optimal_scale.setPlainText(str(data[0][7]))
-        #QMessageBox.warning(self, 'Information', f'spinboxtext: {self.spinBox_minimum_optimal_scale}')
+        if data[0][6]:
+            self.lineEdit_minimum_optimal_scale.setText(str(data[0][6]))
+        if data[0][7]:
+            self.lineEdit_maximum_optimal_scale.setText(str(data[0][7]))
         
         # get categories and fill comboBox
         self.comboBox_categories.clear()
@@ -121,8 +122,15 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         abstract = self.textbox_abstract.toPlainText()
         project_number = self.textbox_project_number.toPlainText()
         keywords = self.textbox_keywords.toPlainText()
-        minimum_optimal_scale = self.textbox_minimum_optimal_scale.toPlainText()
-        maximum_optimal_scale = self.textbox_maximum_optimal_scale.toPlainText()
+        
+        minimum_optimal_scale = self.lineEdit_minimum_optimal_scale.text()
+        maximum_optimal_scale = self.lineEdit_maximum_optimal_scale.text()
+        if not minimum_optimal_scale:
+            minimum_optimal_scale = 'NULL'
+        if not maximum_optimal_scale:
+            maximum_optimal_scale = 'NULL'
+            
+        #QMessageBox.warning(self, 'Information', f'something')
         
         new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
@@ -132,7 +140,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}', "
                f" keywords = '{keywords}', categories = {new_categories_array}, themes = {new_themes_array}, "
-               f" minimum_optimal_scale = '{minimum_optimal_scale}', maximum_optimal_scale = '{maximum_optimal_scale}'"
+               f" minimum_optimal_scale = {minimum_optimal_scale}, maximum_optimal_scale = {maximum_optimal_scale} "
                f"WHERE schema_name = '{schema}' and table_name = '{table}'")
         
         try:
