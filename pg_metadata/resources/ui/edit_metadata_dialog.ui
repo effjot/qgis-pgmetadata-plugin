@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>508</width>
-    <height>414</height>
+    <height>491</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>320</x>
-     <y>370</y>
+     <y>450</y>
      <width>171</width>
      <height>32</height>
     </rect>
@@ -150,7 +150,7 @@
    </widget>
    <widget class="QLabel" name="label_7">
     <property name="enabled">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
@@ -185,6 +185,9 @@
       <width>350</width>
       <height>27</height>
      </rect>
+    </property>
+    <property name="defaultText">
+     <string/>
     </property>
    </widget>
    <widget class="QPlainTextEdit" name="textbox_project_number">
@@ -237,6 +240,9 @@
       <width>350</width>
       <height>27</height>
      </rect>
+    </property>
+    <property name="defaultText">
+     <string/>
     </property>
    </widget>
   </widget>
@@ -326,6 +332,52 @@
    </property>
    <property name="displayFormat">
     <string>yyyy-MM-dd HH:mm:ss</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_10">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>380</y>
+     <width>161</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Kleinster optimaler Maßstab    1 : </string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_11">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>420</y>
+     <width>161</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Größter optimaler Maßstab     1 : </string>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="textbox_minimum_optimal_scale">
+   <property name="geometry">
+    <rect>
+     <x>185</x>
+     <y>375</y>
+     <width>121</width>
+     <height>27</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="textbox_maximum_optimal_scale">
+   <property name="geometry">
+    <rect>
+     <x>185</x>
+     <y>415</y>
+     <width>121</width>
+     <height>27</height>
+    </rect>
    </property>
   </widget>
  </widget>

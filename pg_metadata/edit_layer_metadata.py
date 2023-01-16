@@ -10,12 +10,15 @@ from collections import OrderedDict
 
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.core import QgsProviderConnectionException
-
+from PyQt5.QtWidgets import QMessageBox
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 from pg_metadata.qgis_plugin_tools.tools.resources import load_ui
 
 LOGGER = logging.getLogger('pg_metadata')
 EDITDIALOG_CLASS = load_ui('edit_metadata_dialog.ui')
+
+#TODO fenster immer im Vordergrund?
+#TODO bei 'OK' metadaten sofort anzeigen
 
 
 def postgres_array_to_list(s: str) -> list[str]:
@@ -30,7 +33,7 @@ def list_to_postgres_array(lst: list[str]) -> str:
     if not lst:
         return "'{}'"
     l = ["'" + element + "'" for element in lst]
-    return 'array[' + ','.join(l) + ']'  #TODO ergibt SQL-Syntaxfehler
+    return 'array[' + ','.join(l) + ']'
 
 
 def dict_reverse_lookup(dictionary: dict, values: list) -> list:
@@ -73,7 +76,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         table = datasource_uri.table()
         schema = datasource_uri.schema()
         LOGGER.info(f'Edit layer type {datasource_uri.table()}, {connection}')
-        sql = (f"SELECT title, abstract, project_number, categories, keywords, themes FROM pgmetadata.dataset "
+        sql = (f"SELECT title, abstract, project_number, categories, keywords, themes, minimum_optimal_scale, maximum_optimal_scale, data_last_update FROM pgmetadata.dataset "
                f"WHERE schema_name = '{schema}' and table_name = '{table}'")
         try:
             data = connection.executeSql(sql)
@@ -85,6 +88,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.textbox_abstract.setPlainText(data[0][1])
         self.textbox_project_number.setPlainText(data[0][2])
         self.textbox_keywords.setPlainText(str(data[0][4]))
+        self.textbox_minimum_optimal_scale.setPlainText(str(data[0][6]))
+        self.textbox_maximum_optimal_scale.setPlainText(str(data[0][7]))
+        #QMessageBox.warning(self, 'Information', f'spinboxtext: {self.spinBox_minimum_optimal_scale}')
         
         # get categories and fill comboBox
         self.comboBox_categories.clear()
@@ -115,6 +121,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         abstract = self.textbox_abstract.toPlainText()
         project_number = self.textbox_project_number.toPlainText()
         keywords = self.textbox_keywords.toPlainText()
+        minimum_optimal_scale = self.textbox_minimum_optimal_scale.toPlainText()
+        maximum_optimal_scale = self.textbox_maximum_optimal_scale.toPlainText()
         
         new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
@@ -123,7 +131,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         new_themes_array = list_to_postgres_array(new_themes_keys)
         
         sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}', "
-               f" keywords = '{keywords}', categories = {new_categories_array}, themes = {new_themes_array} "
+               f" keywords = '{keywords}', categories = {new_categories_array}, themes = {new_themes_array}, "
+               f" minimum_optimal_scale = '{minimum_optimal_scale}', maximum_optimal_scale = '{maximum_optimal_scale}'"
                f"WHERE schema_name = '{schema}' and table_name = '{table}'")
         
         try:
