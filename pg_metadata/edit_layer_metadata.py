@@ -28,7 +28,7 @@ def postgres_array_to_list(s: str) -> list[str]:
 
 def list_to_postgres_array(lst: list[str]) -> str:
     if not lst:
-        return "array[]"
+        return "'{}'"
     l = ["'" + element + "'" for element in lst]
     return 'array[' + ','.join(l) + ']'  #TODO ergibt SQL-Syntaxfehler
 
