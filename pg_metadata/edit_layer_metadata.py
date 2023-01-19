@@ -98,8 +98,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
         self.lineEdit_link_size.setValidator(validator)
         self.comboBox_linknames.activated.connect(self.fill_linkinfos)
+        
         #TODO callback für Textfeld, sodass bei Änderung die Combobox neu befüllt wird
-        #self.textbox_link_name.textChanged.connect(self.)
+        #self.textbox_link_name.textChanged.connect(self.xxx)
 
     def fill_linkinfos(self):
         # empty all textboxes
@@ -162,17 +163,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.critical(tr('Error when updating the database: ') + str(e))
 
     def add_link(self):  # called when "Neuer Link" is selected in ComboBox
-        # self.popup_label = QLabel(self)
-        # self.popup_label.setText('Eindeutiger Name:')
-        # self.popup_edit = QLineEdit(self)
-        # self.popup_edit.move(80, 20)
-        # self.popup_edit.resize(200, 32)
-        # self.popup_label.move(20, 20)
-        #new_link_name = 'test123link' #FIXME take name from popup-line-edit
         #open Window with Textedit: "Name des neuen Links"
         #after Ok: write new name to combobox and select it, or by id?
         # get values from textboxes and write it to db
-        
         #sql: add row to pgmetadata.links (list or single values?)
         #TODO button for delete link
         pass
@@ -234,8 +227,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                   f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
         for link in self.links.values():
             self.comboBox_linknames.addItem(link['name'], link['id'])
-        #empty textboxes
-        self.fill_linkinfos()
         
         self.show()
         result = self.exec_()
