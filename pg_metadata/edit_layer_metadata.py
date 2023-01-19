@@ -10,10 +10,8 @@ from collections import OrderedDict
 
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.core import QgsProviderConnectionException
-
-from PyQt5.QtWidgets import QMessageBox, QTableWidget, QTableWidgetItem
-from PyQt5.QtCore import Qt
-
+from PyQt5.QtWidgets import QMessageBox
+#from PyQt5.QtCore import Qt
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 from pg_metadata.qgis_plugin_tools.tools.resources import load_ui
 from qgis.PyQt.QtGui import QIntValidator
@@ -21,7 +19,6 @@ from qgis.PyQt.QtGui import QIntValidator
 LOGGER = logging.getLogger('pg_metadata')
 EDITDIALOG_CLASS = load_ui('edit_metadata_dialog.ui')
 
-#TODO fenster immer im Vordergrund?
 #TODO bei 'OK' metadaten sofort anzeigen
 
 
@@ -70,6 +67,22 @@ def get_themes(connection) -> OrderedDict:
     return terms
 
 
+def get_links(connection, id_col: str, columns: list[str], from_where_clause: str) -> OrderedDict:
+    columns.insert(0, id_col)
+    sql = f"SELECT {', '.join(columns)} {from_where_clause}"
+    try:
+        rows = connection.executeSql(sql)
+    except QgsProviderConnectionException as e:
+        LOGGER.critical(tr('Error when querying the database: ') + str(e))
+        return False
+    
+    terms = [dict(zip(columns, row)) for row in rows]
+    terms_by_id = OrderedDict()
+    for t in terms:
+        terms_by_id[t[id_col]] = t
+    return terms_by_id
+
+
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
     def __init__(self, parent=None):
@@ -78,12 +91,20 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         validator = QIntValidator(1,100000000,self)
         self.lineEdit_minimum_optimal_scale.setValidator(validator)
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
-        self.tabWidget.currentChanged.connect(self.edit_links)
+        
+        #self.tabWidget.currentChanged.connect(self.edit_links) #works
+        self.comboBox_linknames.activated.connect(self.fill_linkinfos)
         
         # self.table_widget = QTableWidget(101, 2)
         # self.widget_layout.addWidget(self.table_widget)
         # self.setLayout(self.widget_layout)
-        # self.fillTable()
+
+    def fill_linkinfos(self):
+        y = self.comboBox_linknames.currentText()
+        QMessageBox.warning(self, 'Information', f'Currently activated link: {y}')
+        
+        self.textbox_link_type.setText('x')
+        #TODO add other textboxes and fill with corresponding informations
 
     def open_editor(self, datasource_uri, connection):
         table = datasource_uri.table()
@@ -97,7 +118,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.critical(tr('Error when querying the database: ') + str(e))
             return False
         
-        dataset_id = data[0][9]  # get foreign key for links-table
+        # get foreign key for links-table
+        self.dataset_id = data[0][9]
         
         self.textbox_title.setPlainText(data[0][0])
         self.textbox_abstract.setPlainText(data[0][1])
@@ -134,6 +156,20 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                 selected_themes_values = [themes[k] for k in selected_themes_keys]
                 self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
         
+        # get links and fill comboBox
+        self.comboBox_linknames.clear()
+        links = get_links(connection, 'id',
+                  ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
+                  f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
+        for link in links:
+            self.comboBox_linknames.addItem(links[link]['name'])
+        
+        # fill textboxes for links after link was selected
+        # y = self.comboBox_linknames.currentText()
+        # QMessageBox.warning(self, 'Information', f'currentText of box: {y}')
+        
+        
+        
         self.show()
         result = self.exec_()
         if not result:
@@ -143,17 +179,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         abstract = self.textbox_abstract.toPlainText()
         project_number = self.textbox_project_number.toPlainText()
         keywords = self.textbox_keywords.toPlainText()
-        
         spatial_level = self.textbox_spatial_level.toPlainText()
-        
         minimum_optimal_scale = self.lineEdit_minimum_optimal_scale.text()
         maximum_optimal_scale = self.lineEdit_maximum_optimal_scale.text()
         if not minimum_optimal_scale:
             minimum_optimal_scale = 'NULL'
         if not maximum_optimal_scale:
             maximum_optimal_scale = 'NULL'
-        
-        
         
         #QMessageBox.warning(self, 'Information', f'something')
         
@@ -174,42 +206,4 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.critical(tr('Error when updating the database: ') + str(e))
             return False
         
-        
-        
-        # links_sql = f"SELECT * FROM pgmetadata.link WHERE fk_id_dataset = {dataset_id} ORDER BY id ASC"
-        # linkdata = connection.executeSql(links_sql)
-        # QMessageBox.warning(self, 'Information', f'Linkdata looks like this: {linkdata}')
-        
-        
-        
-        
-        
         return True
-
-    def edit_links(self, connection):
-        pass
-        # if not self.tabWidget.currentIndex() == 3: return #Third tab is "links" tab
-        
-        # sql = f"SELECT * FROM pgmetadata.link WHERE fk_id_dataset = {dataset_id} ORDER BY id ASC"
-        
-        # try:
-        #     data = connection.executeSql(sql)
-        # except QgsProviderConnectionException as e:
-        #     LOGGER.critical(tr('Error when updating the database: ') + str(e))
-        #     return False
-        
-        # return True
-        
-    def fill_table(self):
-        pass
-        # self.table_widget.clearContents()
-        # self.table_widget.setSortingEnabled(False)
-        # #self.table_widget.sortByColumn(0, Qt.AscendingOrder)
-        # for num in range(101):
-        #     item = QTableWidgetItem()
-        #     item.setData(Qt.EditRole, num)
-        #     self.table_widget.setItem(num, 0, item)
-        #     item2 = QTableWidgetItem()
-        #     item2.setData(Qt.EditRole, num)
-        #     self.table_widget.setItem(num, 1, item2)
-        # self.table_widget.setSortingEnabled(True)
