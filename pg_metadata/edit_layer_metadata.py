@@ -11,7 +11,6 @@ from collections import OrderedDict
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.core import QgsProviderConnectionException
 from PyQt5.QtWidgets import QMessageBox
-#from PyQt5.QtCore import Qt
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 from pg_metadata.qgis_plugin_tools.tools.resources import load_ui
 from qgis.PyQt.QtGui import QIntValidator
@@ -20,6 +19,7 @@ LOGGER = logging.getLogger('pg_metadata')
 EDITDIALOG_CLASS = load_ui('edit_metadata_dialog.ui')
 
 #TODO bei 'OK' metadaten sofort anzeigen
+#TODO falls nichts geändert, aber Ok gedrückt: Datum für Änderung der Metadaten unverändert lassen
 
 
 def postgres_array_to_list(s: str) -> list[str]:
@@ -35,6 +35,12 @@ def list_to_postgres_array(lst: list[str]) -> str:
         return "'{}'"
     l = ["'" + element + "'" for element in lst]
     return 'array[' + ','.join(l) + ']'
+
+
+def str_or_null(s: str):
+    if s:
+        return f"'{s}'"
+    return 'null'
 
 
 def dict_reverse_lookup(dictionary: dict, values: list) -> list:
@@ -75,7 +81,6 @@ def get_links(connection, id_col: str, columns: list[str], from_where_clause: st
     except QgsProviderConnectionException as e:
         LOGGER.critical(tr('Error when querying the database: ') + str(e))
         return False
-    
     terms = [dict(zip(columns, row)) for row in rows]
     terms_by_id = OrderedDict()
     for t in terms:
@@ -91,20 +96,86 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         validator = QIntValidator(1,100000000,self)
         self.lineEdit_minimum_optimal_scale.setValidator(validator)
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
-        
-        #self.tabWidget.currentChanged.connect(self.edit_links) #works
+        self.lineEdit_link_size.setValidator(validator)
         self.comboBox_linknames.activated.connect(self.fill_linkinfos)
-        
-        # self.table_widget = QTableWidget(101, 2)
-        # self.widget_layout.addWidget(self.table_widget)
-        # self.setLayout(self.widget_layout)
+        #TODO callback für Textfeld, sodass bei Änderung die Combobox neu befüllt wird
+        #self.textbox_link_name.textChanged.connect(self.)
 
     def fill_linkinfos(self):
-        y = self.comboBox_linknames.currentText()
-        QMessageBox.warning(self, 'Information', f'Currently activated link: {y}')
+        # empty all textboxes
+        self.textbox_link_name.clear()
+        self.textbox_link_type.clear()
+        self.textbox_link_url.clear()
+        self.textbox_link_description.clear()
+        self.textbox_link_format.clear()
+        self.textbox_link_mime.clear()
+        self.lineEdit_link_size.clear()
         
-        self.textbox_link_type.setText('x')
-        #TODO add other textboxes and fill with corresponding informations
+        if self.comboBox_linknames.currentIndex() < 0:
+            return
+        
+        # get name of currently selected link
+        self.current_link_id = self.comboBox_linknames.currentData()
+        # activate textboxes after selection
+        if self.current_link_id:
+            self.textbox_link_name.setEnabled(True)
+            self.textbox_link_type.setEnabled(True)
+            self.textbox_link_url.setEnabled(True)
+            self.textbox_link_description.setEnabled(True)
+            self.textbox_link_format.setEnabled(True)
+            self.textbox_link_mime.setEnabled(True)
+            self.lineEdit_link_size.setEnabled(True)
+        else: 
+            self.textbox_link_name.setEnabled(False)
+            self.textbox_link_type.setEnabled(False)
+            self.textbox_link_url.setEnabled(False)
+            self.textbox_link_description.setEnabled(False)
+            self.textbox_link_format.setEnabled(False)
+            self.textbox_link_mime.setEnabled(False)
+            self.lineEdit_link_size.setEnabled(False)
+        
+        if self.current_link_id == -1: self.add_link()
+        
+        current_link = self.links[self.current_link_id]
+        if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
+        if current_link['type']:        self.textbox_link_type.setText(current_link['type'])
+        if current_link['url']:         self.textbox_link_url.setText(current_link['url'])
+        if current_link['description']: self.textbox_link_description.setText(current_link['description'])
+        if current_link['format']:      self.textbox_link_format.setText(current_link['format'])
+        if current_link['mime']:        self.textbox_link_mime.setText(current_link['mime'])
+        if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
+
+    def update_links(self, connection): #FIXME nur aufrufen, wenn gebraucht
+        new_link_name = self.textbox_link_name.toPlainText()
+        new_link_type = self.textbox_link_type.toPlainText()
+        new_link_url = self.textbox_link_url.toPlainText()
+        new_link_description = self.textbox_link_description.toPlainText()
+        new_link_format = self.textbox_link_format.toPlainText()
+        new_link_mime = self.textbox_link_mime.toPlainText()
+        new_link_size = self.lineEdit_link_size.text()
+        if not new_link_size: new_link_size = 0
+        sql = f"UPDATE pgmetadata.link SET name = '{new_link_name}', type = {str_or_null(new_link_type)}, url = '{new_link_url}', description = '{new_link_description}', format = {str_or_null(new_link_format)}, mime = '{new_link_mime}', size = '{new_link_size}' "
+        sql += f"WHERE id = {self.current_link_id}"
+        try:
+            connection.executeSql(sql)
+        except QgsProviderConnectionException as e:
+            LOGGER.critical(tr('Error when updating the database: ') + str(e))
+
+    def add_link(self):  # called when "Neuer Link" is selected in ComboBox
+        # self.popup_label = QLabel(self)
+        # self.popup_label.setText('Eindeutiger Name:')
+        # self.popup_edit = QLineEdit(self)
+        # self.popup_edit.move(80, 20)
+        # self.popup_edit.resize(200, 32)
+        # self.popup_label.move(20, 20)
+        #new_link_name = 'test123link' #FIXME take name from popup-line-edit
+        #open Window with Textedit: "Name des neuen Links"
+        #after Ok: write new name to combobox and select it, or by id?
+        # get values from textboxes and write it to db
+        
+        #sql: add row to pgmetadata.links (list or single values?)
+        #TODO button for delete link
+        pass
 
     def open_editor(self, datasource_uri, connection):
         table = datasource_uri.table()
@@ -135,7 +206,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.textbox_spatial_level.setPlainText(data[0][10])
         else: self.textbox_spatial_level.clear()
         
-        
         # get categories and fill comboBox
         self.comboBox_categories.clear()
         categories = get_glossary(connection, 'dataset.categories')
@@ -158,17 +228,14 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get links and fill comboBox
         self.comboBox_linknames.clear()
-        links = get_links(connection, 'id',
+        self.comboBox_linknames.addItem('Link hinzufügen...', -1)
+        self.links = get_links(connection, 'id',
                   ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
                   f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
-        for link in links:
-            self.comboBox_linknames.addItem(links[link]['name'])
-        
-        # fill textboxes for links after link was selected
-        # y = self.comboBox_linknames.currentText()
-        # QMessageBox.warning(self, 'Information', f'currentText of box: {y}')
-        
-        
+        for link in self.links.values():
+            self.comboBox_linknames.addItem(link['name'], link['id'])
+        #empty textboxes
+        self.fill_linkinfos()
         
         self.show()
         result = self.exec_()
@@ -186,6 +253,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             minimum_optimal_scale = 'NULL'
         if not maximum_optimal_scale:
             maximum_optimal_scale = 'NULL'
+        
+        #Call SQL for update links (also for "add link")
+        self.update_links(connection)
         
         #QMessageBox.warning(self, 'Information', f'something')
         
