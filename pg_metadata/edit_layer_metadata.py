@@ -67,7 +67,7 @@ def get_themes(connection) -> OrderedDict:
     return terms
 
 
-def get_links(connection, id_col: str, columns: list[str], from_where_clause: str) -> OrderedDict:
+def query_to_ordereddict(connection, id_col: str, columns: list[str], from_where_clause: str) -> OrderedDict:
     columns.insert(0, id_col)
     sql = f"SELECT {', '.join(columns)} {from_where_clause}"
     try:
@@ -80,19 +80,6 @@ def get_links(connection, id_col: str, columns: list[str], from_where_clause: st
     for t in terms:
         terms_by_id[t[id_col]] = t
     return terms_by_id
-
-
-def count_all_links(connection) -> OrderedDict():
-    sql = "SELECT id, name FROM pgmetadata.link ORDER BY id ASC"
-    try:
-        rows = connection.executeSql(sql)
-    except QgsProviderConnectionException as e:
-        LOGGER.critical(tr('Error when querying the database: ') + str(e))
-        return False
-    terms = OrderedDict()
-    for row in rows:
-        terms[row[0]] = row[1]
-    return terms
 
 
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
@@ -150,8 +137,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         else:
             if new_link_name:  #FIXME check for mandatory fields, if not filled, messagebox
                 #TODO button for delete link
-                sql = "INSERT INTO pgmetadata.link (id, name, type, url, description, format, mime, size, fk_id_dataset) "
-                sql += f"VALUES ({max(self.count_links) + 1}, '{new_link_name}', '{new_link_type}', '{new_link_url}', '{new_link_description}', "
+                sql = "INSERT INTO pgmetadata.link (name, type, url, description, format, mime, size, fk_id_dataset) "
+                sql += f"VALUES ('{new_link_name}', '{new_link_type}', '{new_link_url}', '{new_link_description}', "
                 sql += f"'{new_link_format}', '{new_link_mime}', {new_link_size}, {self.dataset_id})"
             else:
                 return
@@ -219,7 +206,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         # get links and fill comboBox
         self.comboBox_linknames.clear()
         self.comboBox_linknames.addItem('Link hinzufügen...', 0)
-        self.links = get_links(connection, 'id',
+        self.links = query_to_ordereddict(connection, 'id',
                   ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
                   f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
         for link in self.links.values():
@@ -228,20 +215,17 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get link types and fill comboBox
         self.comboBox_link_types.clear()
-        link_types = get_links(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.type' ORDER BY item_order, code")
+        link_types = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.type' ORDER BY item_order, code")
         for link_type in link_types.values():
             self.comboBox_link_types.addItem(link_type['label'], link_type['code'])
         self.comboBox_link_types.setCurrentIndex(-1)
         
         # get link mimes and fill comboBox
         self.comboBox_link_mimes.clear()
-        link_mimes = get_links(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.mime' ORDER BY item_order, code")
+        link_mimes = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.mime' ORDER BY item_order, code")
         for link_mime in link_mimes.values():
             self.comboBox_link_mimes.addItem(f"{link_mime['code']}: {link_mime['label']}", link_mime['code'])
         self.comboBox_link_mimes.setCurrentIndex(-1)
-        
-        # count number of existing links (returns integer)
-        self.count_links = count_all_links(connection)
         
         self.show()
         result = self.exec_()
