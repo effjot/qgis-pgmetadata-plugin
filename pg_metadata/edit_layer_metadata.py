@@ -92,7 +92,7 @@ def count_all_links(connection) -> OrderedDict():
     terms = OrderedDict()
     for row in rows:
         terms[row[0]] = row[1]
-    return terms  #FIXME thier max statt len um doppelte ids zu vermeiden
+    return terms
 
 
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
@@ -116,25 +116,22 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.comboBox_link_mimes.setCurrentIndex(-1)
         self.lineEdit_link_size.clear()
         
-        if self.comboBox_linknames.currentIndex() < 0:  #FIXME erforerlich??
+        if self.comboBox_linknames.currentIndex() <0:  #FIXME erforerlich??
             return
         
         # get ID of currently selected link
         self.current_link_id = self.comboBox_linknames.currentData()
         
-        if self.current_link_id == 0: self.add_link()
-        
-        else:  # when an existing link is selected
-            current_link = self.links[self.current_link_id]
-            if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
-            index = self.comboBox_link_types.findData(current_link['type'])
-            if current_link['type']:        self.comboBox_link_types.setCurrentIndex(index)
-            if current_link['url']:         self.textbox_link_url.setText(current_link['url'])
-            if current_link['description']: self.textbox_link_description.setText(current_link['description'])
-            if current_link['format']:      self.textbox_link_format.setText(current_link['format'])
-            index = self.comboBox_link_mimes.findData(current_link['mime'])
-            if current_link['mime']:        self.comboBox_link_mimes.setCurrentIndex(index)
-            if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
+        current_link = self.links[self.current_link_id]
+        if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
+        index = self.comboBox_link_types.findData(current_link['type'])
+        if current_link['type']:        self.comboBox_link_types.setCurrentIndex(index)
+        if current_link['url']:         self.textbox_link_url.setText(current_link['url'])
+        if current_link['description']: self.textbox_link_description.setText(current_link['description'])
+        if current_link['format']:      self.textbox_link_format.setText(current_link['format'])
+        index = self.comboBox_link_mimes.findData(current_link['mime'])
+        if current_link['mime']:        self.comboBox_link_mimes.setCurrentIndex(index)
+        if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
 
     def update_links(self, connection):
         new_link_name = self.textbox_link_name.toPlainText()
@@ -151,8 +148,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             sql += f"url = '{new_link_url}', description = '{new_link_description}', format = '{new_link_format}', mime = '{new_link_mime}', size = '{new_link_size}' "
             sql += f"WHERE id = {self.current_link_id}"
         else:
-            if new_link_name:  # if name is chosen, new link will be written
-                #FIXME check for mandatory fields, if not filled, messagebox
+            if new_link_name:  #FIXME check for mandatory fields, if not filled, messagebox
+                #TODO button for delete link
                 sql = "INSERT INTO pgmetadata.link (id, name, type, url, description, format, mime, size, fk_id_dataset) "
                 sql += f"VALUES ({max(self.count_links) + 1}, '{new_link_name}', '{new_link_type}', '{new_link_url}', '{new_link_description}', "
                 sql += f"'{new_link_format}', '{new_link_mime}', {new_link_size}, {self.dataset_id})"
@@ -162,12 +159,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             connection.executeSql(sql)
         except QgsProviderConnectionException as e:
             LOGGER.critical(tr('Error when updating the database: ') + str(e))
-
-    def add_link(self):
-        #.warning(self, 'Information', 'Funktion "Neuer Link" aufgerufen')
-        #QMessageBox.warning(self, 'Information', f'Anzahl aller Links in der DB: {count_all_links()}')
-        #TODO button for delete link
-        pass
 
     def open_editor(self, datasource_uri, connection):
         table = datasource_uri.table()
@@ -237,21 +228,20 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get link types and fill comboBox
         self.comboBox_link_types.clear()
-        link_types = get_links(connection, 'id', ['code', 'label_en', 'description_en'], "FROM pgmetadata.glossary WHERE field='link.type'")
+        link_types = get_links(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.type' ORDER BY item_order, code")
         for link_type in link_types.values():
-            self.comboBox_link_types.addItem(f"{link_type['code']} = {link_type['label_en']}", link_type['code'])
+            self.comboBox_link_types.addItem(link_type['label'], link_type['code'])
         self.comboBox_link_types.setCurrentIndex(-1)
         
         # get link mimes and fill comboBox
         self.comboBox_link_mimes.clear()
-        link_mimes = get_links(connection, 'id', ['code', 'label_en', 'description_en'], "FROM pgmetadata.glossary WHERE field='link.mime'")
+        link_mimes = get_links(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.mime' ORDER BY item_order, code")
         for link_mime in link_mimes.values():
-            self.comboBox_link_mimes.addItem(link_mime['label_en'], link_mime['code'])
+            self.comboBox_link_mimes.addItem(f"{link_mime['code']}: {link_mime['label']}", link_mime['code'])
         self.comboBox_link_mimes.setCurrentIndex(-1)
         
         # count number of existing links (returns integer)
         self.count_links = count_all_links(connection)
-        
         
         self.show()
         result = self.exec_()
