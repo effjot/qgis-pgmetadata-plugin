@@ -37,12 +37,6 @@ def list_to_postgres_array(lst: list[str]) -> str:
     return 'array[' + ','.join(l) + ']'
 
 
-def str_or_null(s: str):
-    if s:
-        return f"'{s}'"
-    return 'null'
-
-
 def dict_reverse_lookup(dictionary: dict, values: list) -> list:
     return [key for key, val in dictionary.items() if val in values]
 
@@ -98,7 +92,7 @@ def count_all_links(connection) -> OrderedDict():
     terms = OrderedDict()
     for row in rows:
         terms[row[0]] = row[1]
-    return len(terms)  #FIXME thier max statt len um doppelte ids zu vermeiden
+    return terms  #FIXME thier max statt len um doppelte ids zu vermeiden
 
 
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
@@ -111,9 +105,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
         self.lineEdit_link_size.setValidator(validator)
         self.comboBox_linknames.activated.connect(self.fill_linkinfos)
-        
-        #TODO callback für Textfeld, sodass bei Änderung die Combobox neu befüllt wird
-        #self.textbox_link_name.textChanged.connect(self.xxx)
 
     def fill_linkinfos(self):
         # empty all boxes from former entries
@@ -157,12 +148,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         if self.comboBox_linknames.currentData() !=  0:
             sql = f"UPDATE pgmetadata.link SET name = '{new_link_name}', type = '{new_link_type}', "
-            sql += f"url = '{new_link_url}', description = '{new_link_description}', format = {str_or_null(new_link_format)}, mime = '{new_link_mime}', size = '{new_link_size}' "
+            sql += f"url = '{new_link_url}', description = '{new_link_description}', format = '{new_link_format}', mime = '{new_link_mime}', size = '{new_link_size}' "
             sql += f"WHERE id = {self.current_link_id}"
         else:
             if new_link_name:  # if name is chosen, new link will be written
-                sql = f"INSERT INTO pgmetadata.link (id, name, type, url, description, format, mime, size, fk_id_dataset) "
-                sql += f"VALUES ({self.count_links + 1}, '{new_link_name}', '{new_link_type}', '{new_link_url}', '{new_link_description}', "
+                #FIXME check for mandatory fields, if not filled, messagebox
+                sql = "INSERT INTO pgmetadata.link (id, name, type, url, description, format, mime, size, fk_id_dataset) "
+                sql += f"VALUES ({max(self.count_links) + 1}, '{new_link_name}', '{new_link_type}', '{new_link_url}', '{new_link_description}', "
                 sql += f"'{new_link_format}', '{new_link_mime}', {new_link_size}, {self.dataset_id})"
             else:
                 return
@@ -171,11 +163,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         except QgsProviderConnectionException as e:
             LOGGER.critical(tr('Error when updating the database: ') + str(e))
 
-    def add_link(self):  # called when "Neuer Link" is selected in ComboBox
+    def add_link(self):
         #.warning(self, 'Information', 'Funktion "Neuer Link" aufgerufen')
         #QMessageBox.warning(self, 'Information', f'Anzahl aller Links in der DB: {count_all_links()}')
-        
-        #check if mandatory fields are populated
         #TODO button for delete link
         pass
 
@@ -261,6 +251,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # count number of existing links (returns integer)
         self.count_links = count_all_links(connection)
+        
         
         self.show()
         result = self.exec_()
