@@ -188,13 +188,16 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get themes and fill comboBox
         self.comboBox_themes.clear()
-        themes = get_themes(connection)
+        #themes = get_themes(connection)
+        themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
         if themes:
-            self.comboBox_themes.addItems(themes.values())  # fill comboBox with themes
+            for theme in themes.values():
+                self.comboBox_themes.addItem(theme['label'], theme['code'])  # fill comboBox with themes
             selected_themes_keys = postgres_array_to_list(data[0][5])
             if selected_themes_keys:
-                selected_themes_values = [themes[k] for k in selected_themes_keys]
-                self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
+                for k in selected_themes_keys:
+                    selected_themes_values = theme['label'][k]
+                    self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
         
         # empty all textboxes for links
         self.textbox_link_name.clear()
