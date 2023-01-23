@@ -471,22 +471,6 @@
       <string>QComboBox mit allen Link-Bezeichnungen</string>
      </property>
     </widget>
-    <widget class="QTextEdit" name="textbox_link_type">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>110</x>
-       <y>85</y>
-       <width>381</width>
-       <height>27</height>
-      </rect>
-     </property>
-     <property name="placeholderText">
-      <string/>
-     </property>
-    </widget>
     <widget class="QTextEdit" name="textbox_link_url">
      <property name="enabled">
       <bool>true</bool>
@@ -521,19 +505,6 @@
       <rect>
        <x>110</x>
        <y>240</y>
-       <width>381</width>
-       <height>27</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QTextEdit" name="textbox_link_mime">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>110</x>
-       <y>275</y>
        <width>381</width>
        <height>27</height>
       </rect>
@@ -581,22 +552,22 @@
       </rect>
      </property>
     </widget>
-    <widget class="QComboBox" name="comboBox_link_type">
+    <widget class="QComboBox" name="comboBox_link_types">
      <property name="geometry">
       <rect>
-       <x>500</x>
+       <x>110</x>
        <y>87</y>
-       <width>81</width>
+       <width>381</width>
        <height>22</height>
       </rect>
      </property>
     </widget>
-    <widget class="QComboBox" name="comboBox_link_mime">
+    <widget class="QComboBox" name="comboBox_link_mimes">
      <property name="geometry">
       <rect>
-       <x>500</x>
+       <x>110</x>
        <y>277</y>
-       <width>91</width>
+       <width>381</width>
        <height>22</height>
       </rect>
      </property>

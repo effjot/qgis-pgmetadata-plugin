@@ -88,6 +88,32 @@ def get_links(connection, id_col: str, columns: list[str], from_where_clause: st
     return terms_by_id
 
 
+def get_link_types(connection) -> OrderedDict():
+    sql = "SELECT code, label_en, description_en FROM pgmetadata.glossary WHERE field = 'link.type'"
+    try:
+        rows = connection.executeSql(sql)
+    except QgsProviderConnectionException as e:
+        LOGGER.critical(tr('Error when querying the database: ') + str(e))
+        return False
+    terms = OrderedDict()
+    for row in rows:
+        terms[row[0]] = row[1]
+    return terms
+
+
+def get_link_mimes(connection) -> OrderedDict():
+    sql = "SELECT code, label_en, description_en FROM pgmetadata.glossary WHERE field='link.mime'"
+    try:
+        rows = connection.executeSql(sql)
+    except QgsProviderConnectionException as e:
+        LOGGER.critical(tr('Error when querying the database: ') + str(e))
+        return False
+    terms = OrderedDict()
+    for row in rows:
+        terms[row[0]] = row[1]
+    return terms
+
+
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
     def __init__(self, parent=None):
@@ -105,11 +131,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
     def fill_linkinfos(self):
         # empty all textboxes
         self.textbox_link_name.clear()
-        self.textbox_link_type.clear()
         self.textbox_link_url.clear()
         self.textbox_link_description.clear()
         self.textbox_link_format.clear()
-        self.textbox_link_mime.clear()
         self.lineEdit_link_size.clear()
         
         if self.comboBox_linknames.currentIndex() < 0:  #FIXME erforerlich??
@@ -122,25 +146,27 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         else:  # when an existing link is selected
             current_link = self.links[self.current_link_id]
             if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
-            if current_link['type']:        self.textbox_link_type.setText(current_link['type'])
+            if current_link['type']:        self.comboBox_link_types.setCurrentText(current_link['type'])
             if current_link['url']:         self.textbox_link_url.setText(current_link['url'])
             if current_link['description']: self.textbox_link_description.setText(current_link['description'])
             if current_link['format']:      self.textbox_link_format.setText(current_link['format'])
-            if current_link['mime']:        self.textbox_link_mime.setText(current_link['mime'])
+            if current_link['mime']:        self.comboBox_link_mimes.setCurrentText(current_link['mime'])
             if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
-
+            
     def update_links(self, connection):
         if self.comboBox_linknames.currentData() !=  0:
             new_link_name = self.textbox_link_name.toPlainText()
-            new_link_type = self.textbox_link_type.toPlainText()
+            new_link_type = self.comboBox_link_types.currentText()
             new_link_url = self.textbox_link_url.toPlainText()
             new_link_description = self.textbox_link_description.toPlainText()
             new_link_format = self.textbox_link_format.toPlainText()
-            new_link_mime = self.textbox_link_mime.toPlainText()
+            new_link_mime = self.comboBox_link_mimes.currentText()
             new_link_size = self.lineEdit_link_size.text()
             if not new_link_size: new_link_size = 0
-            sql = f"UPDATE pgmetadata.link SET name = '{new_link_name}', type = {str_or_null(new_link_type)}, url = '{new_link_url}', description = '{new_link_description}', format = {str_or_null(new_link_format)}, mime = '{new_link_mime}', size = '{new_link_size}' "
+            sql = f"UPDATE pgmetadata.link SET name = '{new_link_name}', type = {str_or_null(new_link_type)}, "
+            sql += f"url = '{new_link_url}', description = '{new_link_description}', format = {str_or_null(new_link_format)}, mime = '{new_link_mime}', size = '{new_link_size}' "
             sql += f"WHERE id = {self.current_link_id}"
+            #else: siehe add_link sql
             try:
                 connection.executeSql(sql)
             except QgsProviderConnectionException as e:
@@ -148,6 +174,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
     def add_link(self):  # called when "Neuer Link" is selected in ComboBox
         QMessageBox.warning(self, 'Information', 'Funktion "Neuer Link" aufgerufen')
+        # sql_add_link = f"INSERT INTO pgmetadata.link (id, name, type, url, description, format, mime, size, fk_id_dataset) "
+        # sql_add_link += f"VALUES (5, '{new_link_name}', '{new_link_type}', '{new_link_url}', '{new_link_description}', "
+        # sql_add_link += f"'{new_link_format}', '{new_link_mime}', {new_link_size}, {self.dataset_id})"
+        
         #check if mandatory fields are populated
         # get values from textboxes and write it to db ( in update_links)
         #sql: add row to pgmetadata.links (list or single values?)
@@ -205,11 +235,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # empty all textboxes for links
         self.textbox_link_name.clear()
-        self.textbox_link_type.clear()
         self.textbox_link_url.clear()
         self.textbox_link_description.clear()
         self.textbox_link_format.clear()
-        self.textbox_link_mime.clear()
         self.lineEdit_link_size.clear()
         
         # get links and fill comboBox
@@ -221,6 +249,16 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         for link in self.links.values():
             self.comboBox_linknames.addItem(link['name'], link['id'])
         self.comboBox_linknames.setCurrentIndex(0)
+        
+        # get link types and fill comboBox
+        link_types = get_link_types(connection)
+        self.comboBox_link_types.clear()
+        self.comboBox_link_types.addItems(link_types)
+        
+        # get link mimes and fill comboBox
+        link_mimes = get_link_mimes(connection)
+        self.comboBox_link_mimes.clear()
+        self.comboBox_link_mimes.addItems(link_mimes)
         
         self.show()
         result = self.exec_()
