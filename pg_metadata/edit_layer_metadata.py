@@ -112,60 +112,44 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.textbox_link_mime.clear()
         self.lineEdit_link_size.clear()
         
-        if self.comboBox_linknames.currentIndex() < 0:
+        if self.comboBox_linknames.currentIndex() < 0:  #FIXME erforerlich??
             return
         
-        # get name of currently selected link
+        # get id of currently selected link
         self.current_link_id = self.comboBox_linknames.currentData()
-        # activate textboxes after selection
-        if self.current_link_id:
-            self.textbox_link_name.setEnabled(True)
-            self.textbox_link_type.setEnabled(True)
-            self.textbox_link_url.setEnabled(True)
-            self.textbox_link_description.setEnabled(True)
-            self.textbox_link_format.setEnabled(True)
-            self.textbox_link_mime.setEnabled(True)
-            self.lineEdit_link_size.setEnabled(True)
-        else: 
-            self.textbox_link_name.setEnabled(False)
-            self.textbox_link_type.setEnabled(False)
-            self.textbox_link_url.setEnabled(False)
-            self.textbox_link_description.setEnabled(False)
-            self.textbox_link_format.setEnabled(False)
-            self.textbox_link_mime.setEnabled(False)
-            self.lineEdit_link_size.setEnabled(False)
         
-        if self.current_link_id == -1: self.add_link()
-        
-        current_link = self.links[self.current_link_id]
-        if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
-        if current_link['type']:        self.textbox_link_type.setText(current_link['type'])
-        if current_link['url']:         self.textbox_link_url.setText(current_link['url'])
-        if current_link['description']: self.textbox_link_description.setText(current_link['description'])
-        if current_link['format']:      self.textbox_link_format.setText(current_link['format'])
-        if current_link['mime']:        self.textbox_link_mime.setText(current_link['mime'])
-        if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
+        if self.current_link_id == 0: self.add_link()
+        else:  # when an existing link is selected
+            current_link = self.links[self.current_link_id]
+            if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
+            if current_link['type']:        self.textbox_link_type.setText(current_link['type'])
+            if current_link['url']:         self.textbox_link_url.setText(current_link['url'])
+            if current_link['description']: self.textbox_link_description.setText(current_link['description'])
+            if current_link['format']:      self.textbox_link_format.setText(current_link['format'])
+            if current_link['mime']:        self.textbox_link_mime.setText(current_link['mime'])
+            if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
 
-    def update_links(self, connection): #FIXME nur aufrufen, wenn gebraucht
-        new_link_name = self.textbox_link_name.toPlainText()
-        new_link_type = self.textbox_link_type.toPlainText()
-        new_link_url = self.textbox_link_url.toPlainText()
-        new_link_description = self.textbox_link_description.toPlainText()
-        new_link_format = self.textbox_link_format.toPlainText()
-        new_link_mime = self.textbox_link_mime.toPlainText()
-        new_link_size = self.lineEdit_link_size.text()
-        if not new_link_size: new_link_size = 0
-        sql = f"UPDATE pgmetadata.link SET name = '{new_link_name}', type = {str_or_null(new_link_type)}, url = '{new_link_url}', description = '{new_link_description}', format = {str_or_null(new_link_format)}, mime = '{new_link_mime}', size = '{new_link_size}' "
-        sql += f"WHERE id = {self.current_link_id}"
-        try:
-            connection.executeSql(sql)
-        except QgsProviderConnectionException as e:
-            LOGGER.critical(tr('Error when updating the database: ') + str(e))
+    def update_links(self, connection):
+        if self.comboBox_linknames.currentData() !=  0:
+            new_link_name = self.textbox_link_name.toPlainText()
+            new_link_type = self.textbox_link_type.toPlainText()
+            new_link_url = self.textbox_link_url.toPlainText()
+            new_link_description = self.textbox_link_description.toPlainText()
+            new_link_format = self.textbox_link_format.toPlainText()
+            new_link_mime = self.textbox_link_mime.toPlainText()
+            new_link_size = self.lineEdit_link_size.text()
+            if not new_link_size: new_link_size = 0
+            sql = f"UPDATE pgmetadata.link SET name = '{new_link_name}', type = {str_or_null(new_link_type)}, url = '{new_link_url}', description = '{new_link_description}', format = {str_or_null(new_link_format)}, mime = '{new_link_mime}', size = '{new_link_size}' "
+            sql += f"WHERE id = {self.current_link_id}"
+            try:
+                connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when updating the database: ') + str(e))
 
     def add_link(self):  # called when "Neuer Link" is selected in ComboBox
-        #open Window with Textedit: "Name des neuen Links"
-        #after Ok: write new name to combobox and select it, or by id?
-        # get values from textboxes and write it to db
+        QMessageBox.warning(self, 'Information', 'Funktion "Neuer Link" aufgerufen')
+        #check if mandatory fields are populated
+        # get values from textboxes and write it to db ( in update_links)
         #sql: add row to pgmetadata.links (list or single values?)
         #TODO button for delete link
         pass
@@ -219,14 +203,24 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                 selected_themes_values = [themes[k] for k in selected_themes_keys]
                 self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
         
+        # empty all textboxes for links
+        self.textbox_link_name.clear()
+        self.textbox_link_type.clear()
+        self.textbox_link_url.clear()
+        self.textbox_link_description.clear()
+        self.textbox_link_format.clear()
+        self.textbox_link_mime.clear()
+        self.lineEdit_link_size.clear()
+        
         # get links and fill comboBox
         self.comboBox_linknames.clear()
-        self.comboBox_linknames.addItem('Link hinzufügen...', -1)
+        self.comboBox_linknames.addItem('Link hinzufügen...', 0)
         self.links = get_links(connection, 'id',
                   ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
                   f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
         for link in self.links.values():
             self.comboBox_linknames.addItem(link['name'], link['id'])
+        self.comboBox_linknames.setCurrentIndex(0)
         
         self.show()
         result = self.exec_()

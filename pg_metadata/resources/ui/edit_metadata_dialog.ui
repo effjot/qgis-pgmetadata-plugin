@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>542</width>
+    <width>622</width>
     <height>440</height>
    </rect>
   </property>
@@ -34,12 +34,12 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>523</width>
-     <height>381</height>
+     <width>601</width>
+     <height>371</height>
     </rect>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -362,7 +362,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>20</y>
+       <y>15</y>
        <width>111</width>
        <height>16</height>
       </rect>
@@ -375,7 +375,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>95</y>
+       <y>90</y>
        <width>47</width>
        <height>13</height>
       </rect>
@@ -388,7 +388,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>180</y>
+       <y>175</y>
        <width>71</width>
        <height>16</height>
       </rect>
@@ -401,7 +401,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>250</y>
+       <y>245</y>
        <width>47</width>
        <height>13</height>
       </rect>
@@ -414,7 +414,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>285</y>
+       <y>280</y>
        <width>47</width>
        <height>13</height>
       </rect>
@@ -427,7 +427,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>320</y>
+       <y>315</y>
        <width>47</width>
        <height>13</height>
       </rect>
@@ -440,7 +440,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>130</y>
+       <y>125</y>
        <width>47</width>
        <height>13</height>
       </rect>
@@ -461,13 +461,19 @@
      <property name="currentText">
       <string/>
      </property>
+     <property name="currentIndex">
+      <number>-1</number>
+     </property>
+     <property name="maxVisibleItems">
+      <number>15</number>
+     </property>
      <property name="placeholderText">
       <string>QComboBox mit allen Link-Bezeichnungen</string>
      </property>
     </widget>
     <widget class="QTextEdit" name="textbox_link_type">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -483,7 +489,7 @@
     </widget>
     <widget class="QTextEdit" name="textbox_link_url">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -496,7 +502,7 @@
     </widget>
     <widget class="QTextEdit" name="textbox_link_description">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -509,7 +515,7 @@
     </widget>
     <widget class="QTextEdit" name="textbox_link_format">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -522,7 +528,7 @@
     </widget>
     <widget class="QTextEdit" name="textbox_link_mime">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -535,7 +541,7 @@
     </widget>
     <widget class="QLineEdit" name="lineEdit_link_size">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -553,7 +559,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>60</y>
+       <y>55</y>
        <width>71</width>
        <height>16</height>
       </rect>
@@ -564,7 +570,7 @@
     </widget>
     <widget class="QTextEdit" name="textbox_link_name">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -572,6 +578,26 @@
        <y>50</y>
        <width>381</width>
        <height>27</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="comboBox_link_type">
+     <property name="geometry">
+      <rect>
+       <x>500</x>
+       <y>87</y>
+       <width>81</width>
+       <height>22</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="comboBox_link_mime">
+     <property name="geometry">
+      <rect>
+       <x>500</x>
+       <y>277</y>
+       <width>91</width>
+       <height>22</height>
       </rect>
      </property>
     </widget>
