@@ -54,17 +54,17 @@ def get_glossary(connection, field: str) -> OrderedDict:
     return terms
 
 
-def get_themes(connection) -> OrderedDict:
-    sql = "SELECT code, label FROM pgmetadata.theme ORDER BY label"
-    try:
-        rows = connection.executeSql(sql)
-    except QgsProviderConnectionException as e:
-        LOGGER.critical(tr('Error when querying the database: ') + str(e))
-        return False
-    terms = OrderedDict()
-    for row in rows:
-        terms[row[0]] = row[1]
-    return terms
+# def get_themes(connection) -> OrderedDict:
+#     sql = "SELECT code, label FROM pgmetadata.theme ORDER BY label"
+#     try:
+#         rows = connection.executeSql(sql)
+#     except QgsProviderConnectionException as e:
+#         LOGGER.critical(tr('Error when querying the database: ') + str(e))
+#         return False
+#     terms = OrderedDict()
+#     for row in rows:
+#         terms[row[0]] = row[1]
+#     return terms
 
 
 def query_to_ordereddict(connection, id_col: str, columns: list[str], from_where_clause: str) -> OrderedDict:
@@ -188,16 +188,15 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get themes and fill comboBox
         self.comboBox_themes.clear()
-        #themes = get_themes(connection)
         themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
-        if themes:
-            for theme in themes.values():
-                self.comboBox_themes.addItem(theme['label'], theme['code'])  # fill comboBox with themes
-            selected_themes_keys = postgres_array_to_list(data[0][5])
-            if selected_themes_keys:
-                for k in selected_themes_keys:
-                    selected_themes_values = theme['label'][k]
-                    self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
+        selected_themes_keys = postgres_array_to_list(data[0][5])
+        selected_themes_values = []
+        for theme in themes.values():
+            self.comboBox_themes.addItem(theme['label'], theme['code'])
+            for i in selected_themes_keys:
+                if i == theme['code']:
+                    selected_themes_values.append(theme['label'])
+        self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
         
         # empty all textboxes for links
         self.textbox_link_name.clear()
@@ -250,12 +249,15 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         #Call SQL for update links (also for "add link")
         self.update_links(connection)
         
-        #QMessageBox.warning(self, 'Information', f'something')
-        
         new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
         
-        new_themes_keys = dict_reverse_lookup(themes, self.comboBox_themes.checkedItems())
+        new_themes_values = self.comboBox_themes.checkedItems()
+        new_themes_keys = []
+        for theme in themes.values():
+            for i in new_themes_values:
+                if i == theme['label']:
+                    new_themes_keys.append(theme['code'])
         new_themes_array = list_to_postgres_array(new_themes_keys)
         
         sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}', "
