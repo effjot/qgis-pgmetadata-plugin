@@ -78,6 +78,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
         self.lineEdit_link_size.setValidator(validator)
         self.comboBox_linknames.activated.connect(self.fill_linkinfos)
+        #self.button_link_delete.clicked.connect(self.update_links)
 
     def fill_linkinfos(self):
         if self.current_link_id:  # neuer Link ausgewählt, gibt einen vorherigen Link
