@@ -78,22 +78,51 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
         self.lineEdit_link_size.setValidator(validator)
         self.comboBox_linknames.activated.connect(self.fill_linkinfos)
-        #self.button_link_delete.clicked.connect(self.update_links)
+        self.tabWidget.currentChanged.connect(self.fill_linkinfos)
+        self.button_add_link.clicked.connect(self.new_link)
+        #self.button_remove_lick.clicked.connect(self.remove_link)
 
+    def new_link(self):
+        # empty all boxes from former entries
+        #self.comboBox_linknames.setCurrentIndex(-1)
+        self.textbox_link_name.clear()
+        self.comboBox_link_types.setCurrentIndex(-1)
+        self.textbox_link_url.clear()
+        self.textbox_link_description.clear()
+        self.textbox_link_format.clear()
+        self.comboBox_link_mimes.setCurrentIndex(-1)
+        self.lineEdit_link_size.clear()
+        if self.links:
+            new_id = min(self.links) - 1
+        else:
+            new_id = -1
+        self.links[new_id] = {'id': new_id, 'name': '', 'url': '', 'status': 'new'}
+        self.current_link_id = new_id
+        self.comboBox_linknames.addItem('(Neuer Link)', new_id)
+        self.comboBox_linknames.setCurrentIndex(self.comboBox_linknames.count() - 1)
+
+    def save_link(self, link):
+        """Link-Daten aus Dialog holen und in 'link' merken"""
+        if 'status' not in link:
+            link['status'] = 'update'
+        dlg_name = self.textbox_link_name.toPlainText()
+        if link['name'] != dlg_name:
+            self.comboBox_linknames.setItemText(self.comboBox_linknames.currentIndex(),
+                                                '*' + dlg_name)
+            link['name'] = dlg_name
+        link['type'] = self.comboBox_link_types.currentData()
+        link['url'] = self.textbox_link_url.toPlainText()
+        link['description'] = self.textbox_link_description.toPlainText()
+        link['format'] = self.textbox_link_format.toPlainText()
+        link['mime'] = self.comboBox_link_mimes.currentData()
+        link['size'] = self.lineEdit_link_size.text()
+            
     def fill_linkinfos(self):
+        if self.tabWidget.currentIndex() != 3:  # Tab für Links ausgewählt
+            return
         if self.current_link_id:  # neuer Link ausgewählt, gibt einen vorherigen Link
-            prev_link = self.links[self.current_link_id]
-            if 'status' not in prev_link:
-                prev_link['status'] = 'update'
-            # speichern aus textfeldern
-            prev_link['name'] = self.textbox_link_name.toPlainText()
-            prev_link['type'] = self.comboBox_link_types.currentData()
-            prev_link['url'] = self.textbox_link_url.toPlainText()
-            prev_link['description'] = self.textbox_link_description.toPlainText()
-            prev_link['format'] = self.textbox_link_format.toPlainText()
-            prev_link['mime'] = self.comboBox_link_mimes.currentData()
-            prev_link['size'] = self.lineEdit_link_size.text()
-        
+            self.save_link(self.links[self.current_link_id])
+
         # empty all boxes from former entries
         self.textbox_link_name.clear()
         self.comboBox_link_types.setCurrentIndex(-1)
@@ -102,16 +131,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.textbox_link_format.clear()
         self.comboBox_link_mimes.setCurrentIndex(-1)
         self.lineEdit_link_size.clear()
-        
-        if self.comboBox_linknames.currentIndex() == 0:  # neuen Link anlegen
-            if self.links:
-                new_id = min(self.links) - 1
-            else:
-                new_id = -1
-            self.links[new_id] = OrderedDict(id=new_id, name='', url='', status='new')
-            self.current_link_id = new_id
-            return
-        
+
         # get ID of currently selected link
         self.current_link_id = self.comboBox_linknames.currentData()
         
@@ -126,37 +146,31 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if current_link['mime']:        self.comboBox_link_mimes.setCurrentIndex(index)
         if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
 
-    def update_links(self, connection):
-        if self.current_link_id:
-            current_link = self.links[self.current_link_id]
-            if 'status' not in current_link:
-                current_link['status'] = 'update'
-            current_link['name'] = self.textbox_link_name.toPlainText()
-            current_link['type'] = self.comboBox_link_types.currentData()
-            current_link['url'] = self.textbox_link_url.toPlainText()
-            current_link['description'] = self.textbox_link_description.toPlainText()
-            current_link['format'] = self.textbox_link_format.toPlainText()
-            current_link['mime'] = self.comboBox_link_mimes.currentData()
-            current_link['size'] = self.lineEdit_link_size.text()
-            if not current_link['size']: current_link['size'] = 0
-            
-            for link in self.links.values():
-                if 'status' not in link.keys():
-                    continue
-                if link['status'] == 'update':
-                    sql = f"UPDATE pgmetadata.link SET name = '{link['name']}', type = '{link['type']}', "
-                    sql += f"url = '{link['url']}', description = '{link['description']}', format = '{link['format']}', mime = '{link['mime']}', size = '{link['size']}' "
-                    sql += f"WHERE id = {link['id']}"
-                if link['status'] == 'new' and link['name'] and link['url']:
+    def save_link_edits_to_database(self, connection):
+        if not self.current_link_id:
+            return
+        self.save_link(self.links[self.current_link_id])
+        for link in self.links.values():
+            if 'status' not in link.keys():
+                continue
+            if link['status'] == 'update':
+                sql = f"UPDATE pgmetadata.link SET name = '{link['name']}', type = '{link['type']}', "
+                sql += f"url = '{link['url']}', description = '{link['description']}', format = '{link['format']}', mime = '{link['mime']}', size = '{link['size']}' "
+                sql += f"WHERE id = {link['id']}"
+            if link['status'] == 'new':
+                if link['name'] and link['url']:
                     sql = "INSERT INTO pgmetadata.link (name, type, url, description, format, mime, size, fk_id_dataset) "
                     sql += f"VALUES ('{link['name']}', '{link['type']}', '{link['url']}', '{link['description']}', "
                     sql += f"'{link['format']}', '{link['mime']}', {link['size']}, {self.dataset_id})"
-                if link['status'] == 'remove':
-                    pass
-                try:
-                    connection.executeSql(sql)
-                except QgsProviderConnectionException as e:
-                    LOGGER.critical(tr('Error when updating the database: ') + str(e))
+                else:  # Abbruch bei unvollständiger eingabe
+                    QMessageBox.warning(self, 'Information', 'Fehlende Einträge für neuen Link.')
+                    return
+            if link['status'] == 'remove':
+                pass
+            try:
+                connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when updating the database: ') + str(e))
 
     def open_editor(self, datasource_uri, connection):
         table = datasource_uri.table()
@@ -218,7 +232,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get links and fill comboBox
         self.comboBox_linknames.clear()
-        self.comboBox_linknames.addItem('Link hinzufügen...', 0)
         self.links = query_to_ordereddict(connection, 'id',
                   ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
                   f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
@@ -259,7 +272,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             maximum_optimal_scale = 'NULL'
         
         #Call SQL for update links (also for "add link")
-        self.update_links(connection)
+        self.save_link_edits_to_database(connection)
         
         new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
