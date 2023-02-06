@@ -105,7 +105,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         self.edit_layer.setEnabled(False)
         self.edit_layer.setToolTip(tr("Open dialog window to edit metadata"))
         self.edit_layer.setIcon(QgsApplication.getThemeIcon('/mActionToggleEditing.svg'))
-        self.edit_layer.clicked.connect(self.open_edit_dialog)
+        self.edit_layer.clicked.connect(self.edit_layer_metadata)
 
         # Settings menu
         self.config.setAutoRaise(True)
@@ -162,6 +162,8 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             self.default_html_content_not_pg_layer()
 
         iface.layerTreeView().currentLayerChanged.connect(self.layer_changed)
+        if iface.activeLayer:
+            self.layer_changed(iface.activeLayer())
 
     def export_dock_content(self, output_format: OutputFormats):
         """ Export the current displayed metadata sheet to the given format. """
@@ -488,11 +490,12 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                                                                                           theme=theme),
                                        level=Qgis.Info)
 
-    def open_edit_dialog(self, layer):
-        #LOGGER.critical(f'oprn Edit layer type {type(self.current_datasource_uri)}, {type(self.current_connection)}')
+    def edit_layer_metadata(self):
+        LOGGER.debug(f'edit_layer_metadata(): {self.current_datasource_uri=}, {self.current_connection=}')
         updated = self.edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
+        LOGGER.debug(f'edit_dialog returned {updated=}')
         if updated:
-            self.layer_changed(layer)
+            self.layer_changed(iface.activeLayer())
 
     @staticmethod
     def open_external_help():

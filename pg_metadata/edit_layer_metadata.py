@@ -17,8 +17,7 @@ from qgis.PyQt.QtGui import QIntValidator
 LOGGER = logging.getLogger('pg_metadata')
 EDITDIALOG_CLASS = load_ui('edit_metadata_dialog.ui')
 
-#TODO bei 'OK' metadaten sofort anzeigen
-#TODO falls nichts geändert, aber Ok gedrückt: Datum für Änderung der Metadaten unverändert lassen
+#TODO falls nichts geändert, aber Ok gedrückt: Datum für Änderung der Metadaten unverändert lassen -> d.h. gar nichts in DB schreiben
 
 
 def postgres_array_to_list(s: str) -> list[str]:
@@ -165,15 +164,16 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         for link in self.links.values():
             if 'status' not in link.keys():
                 continue
+            size = link['size'] if link['size'] else 'NULL'
             if link['status'] == 'update':
                 sql = f"UPDATE pgmetadata.link SET name = '{link['name']}', type = '{link['type']}', "
-                sql += f"url = '{link['url']}', description = '{link['description']}', format = '{link['format']}', mime = '{link['mime']}', size = '{link['size']}' "
+                sql += f"url = '{link['url']}', description = '{link['description']}', format = '{link['format']}', mime = '{link['mime']}', size = {size} "
                 sql += f"WHERE id = {link['id']}"
             if link['status'] == 'new':
                 if link['name'] and link['url']:
                     sql = "INSERT INTO pgmetadata.link (name, type, url, description, format, mime, size, fk_id_dataset) "
                     sql += f"VALUES ('{link['name']}', '{link['type']}', '{link['url']}', '{link['description']}', "
-                    sql += f"'{link['format']}', '{link['mime']}', {link['size']}, {self.dataset_id})"
+                    sql += f"'{link['format']}', '{link['mime']}', {size}, {self.dataset_id})"
                 else:  # Abbruch bei unvollständiger eingabe
                     QMessageBox.warning(self, 'Information', 'Fehlende Einträge für neuen Link.')
                     return
