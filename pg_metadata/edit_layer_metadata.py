@@ -6,6 +6,7 @@ Created on Thu Sep  8 14:16:32 2022
 """
 
 import logging
+from dataclasses import dataclass
 from collections import OrderedDict
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.core import QgsProviderConnectionException
@@ -67,6 +68,85 @@ def query_to_ordereddict(connection, id_col: str, columns: list[str], from_where
     return terms_by_id
 
 
+# TODO: ggf. Klasse für einzelnen Link verwenden
+@dataclass
+class Link:
+    """Metadata link information"""
+    id: int
+    name: str
+
+
+class Links:
+    def __init__(self):
+        self.links = None
+        
+    def clear(self):
+        self.links = None
+        
+    def count(self):
+        if not self.links:
+            return 0
+        return len(self.links)
+
+    def get(self, id: int):
+        if id not in self.links:
+            return None
+        return self.links[id]
+    
+    def get_all(self):
+        return self.links.values()
+
+    def read_from_db(self, connection, dataset_id: int, sort_key='name'):
+        self.clear()
+        self.links = query_to_ordereddict(
+            connection, 'id',
+            ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
+            f"FROM pgmetadata.link WHERE fk_id_dataset = {dataset_id} ORDER BY {sort_key}")
+        
+    def write_to_db(self, connection, dataset_id):
+        if not self.links:
+            return
+        for link in self.get_all():
+            if 'status' not in link.keys():
+                continue
+            size = link['size'] if link['size'] else 'NULL'
+            if link['status'] == 'update':
+                sql = f"UPDATE pgmetadata.link SET name = '{link['name']}', type = '{link['type']}', "
+                sql += f"url = '{link['url']}', description = '{link['description']}', format = '{link['format']}', mime = '{link['mime']}', size = {size} "
+                sql += f"WHERE id = {link['id']}"
+            if link['status'] == 'new':
+                if link['name'] and link['url']:
+                    sql = "INSERT INTO pgmetadata.link (name, type, url, description, format, mime, size, fk_id_dataset) "
+                    sql += f"VALUES ('{link['name']}', '{link['type']}', '{link['url']}', '{link['description']}', "
+                    sql += f"'{link['format']}', '{link['mime']}', {size}, {dataset_id})"
+                else:  # Abbruch bei unvollständiger eingabe
+                    QMessageBox.warning(self, 'Information', 'Fehlende Einträge für neuen Link.')
+                    return
+            if link['status'] == 'remove':
+                pass
+            try:
+                connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when updating the database: ') + str(e))
+    
+    def new(self):
+        """Create new link with empty data and mark for database insert"""
+        if self.links:
+            new_id = min(self.links) - 1
+        else:
+            new_id = -1
+        self.links[new_id] = {'id': new_id, 'name': '', 'url': '', 'status': 'new'}
+        return new_id
+    
+    def update(self):  # TODO PgMetadataLayerEditor.save_link() hier einbauen
+        """Update link data and mark for database update"""
+        pass
+    
+    def remove(self, id):
+        """Mark link for removal from metadata in database"""
+        pass
+
+
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
     def __init__(self, parent=None):
@@ -80,9 +160,11 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.tabWidget.currentChanged.connect(self.fill_linkinfos)
         self.button_add_link.clicked.connect(self.new_link)
         #self.button_remove_lick.clicked.connect(self.remove_link)
+        self.links = Links()
 
     def new_link(self):
         # empty all boxes from former entries
+        #FIXME: Felder löschen kommt unten nochmal -> in Methode clear_linkinfo() auslagern
         #self.comboBox_linknames.setCurrentIndex(-1)
         self.textbox_link_name.clear()
         self.comboBox_link_types.setCurrentIndex(-1)
@@ -91,17 +173,14 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.textbox_link_format.clear()
         self.comboBox_link_mimes.setCurrentIndex(-1)
         self.lineEdit_link_size.clear()
-        if self.links:
-            new_id = min(self.links) - 1
-        else:
-            new_id = -1
-        self.links[new_id] = {'id': new_id, 'name': '', 'url': '', 'status': 'new'}
+        new_id = self.links.new()
         self.current_link_id = new_id
         self.comboBox_linknames.addItem('(Neuer Link)', new_id)
         self.comboBox_linknames.setCurrentIndex(self.comboBox_linknames.count() - 1)
 
     def save_link(self, link):
         """Link-Daten aus Dialog holen und in 'link' merken"""
+        #TODO gehört auch in Links-Klasse (am besten update() nennen)
         if 'status' not in link:
             link['status'] = 'update'
         dlg_name = self.textbox_link_name.toPlainText()
@@ -122,16 +201,17 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         link['size'] = self.lineEdit_link_size.text()
             
     def fill_linkinfos(self):
+        # FIXME: sollte besser update_linkinfo() heißen (ohne s am Ende)
         LOGGER.info('fill_linkinfos()')
         if self.tabWidget.currentIndex() != 3:  # Tab für Links ausgewählt
-            LOGGER.info('  nicht im Tab -> fertig')
+            LOGGER.debug('  nicht im Tab -> fertig')
             return
         if self.current_link_id == self.comboBox_linknames.currentData():
-            LOGGER.info('  kein neuer Link gewählt -> fertig')
+            LOGGER.debug('  kein neuer Link gewählt -> fertig')
             return
         if self.current_link_id:
-            LOGGER.info(f'  neuer Link gewählt: {self.current_link_id=} speichern')
-            self.save_link(self.links[self.current_link_id])
+            LOGGER.debug(f'  neuer Link gewählt: {self.current_link_id=} speichern')
+            self.save_link(self.links.get(self.current_link_id))
 
         # empty all boxes from former entries
         self.textbox_link_name.clear()
@@ -146,7 +226,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.current_link_id = self.comboBox_linknames.currentData()
         LOGGER.info(f'  neu {self.current_link_id=}')
         
-        current_link = self.links[self.current_link_id]
+        current_link = self.links.get(self.current_link_id)
         # FIXME: sind die ifs nötig?
         if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
         index = self.comboBox_link_types.findData(current_link['type'])
@@ -158,33 +238,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if current_link['mime']:        self.comboBox_link_mimes.setCurrentIndex(index)
         if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
 
-    def store_link_edits_in_database(self, connection):
-        if not self.links:
-            return
-        for link in self.links.values():
-            if 'status' not in link.keys():
-                continue
-            size = link['size'] if link['size'] else 'NULL'
-            if link['status'] == 'update':
-                sql = f"UPDATE pgmetadata.link SET name = '{link['name']}', type = '{link['type']}', "
-                sql += f"url = '{link['url']}', description = '{link['description']}', format = '{link['format']}', mime = '{link['mime']}', size = {size} "
-                sql += f"WHERE id = {link['id']}"
-            if link['status'] == 'new':
-                if link['name'] and link['url']:
-                    sql = "INSERT INTO pgmetadata.link (name, type, url, description, format, mime, size, fk_id_dataset) "
-                    sql += f"VALUES ('{link['name']}', '{link['type']}', '{link['url']}', '{link['description']}', "
-                    sql += f"'{link['format']}', '{link['mime']}', {size}, {self.dataset_id})"
-                else:  # Abbruch bei unvollständiger eingabe
-                    QMessageBox.warning(self, 'Information', 'Fehlende Einträge für neuen Link.')
-                    return
-            if link['status'] == 'remove':
-                pass
-            try:
-                connection.executeSql(sql)
-            except QgsProviderConnectionException as e:
-                LOGGER.critical(tr('Error when updating the database: ') + str(e))
-
     def open_editor(self, datasource_uri, connection):
+        # FIXME: Methode zerlegen in Öffnen=Felder befüllen, _exec(), Schließen/Speichern
         table = datasource_uri.table()
         schema = datasource_uri.schema()
         LOGGER.info(f'Edit layer type {datasource_uri.table()}, {connection}')
@@ -196,7 +251,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.critical(tr('Error when querying the database: ') + str(e))
             return False
         
-        # get foreign key for links-table
+        # get foreign key for links-table #FIXME Nicht nur für Links! Mit dataset_id am Schluss auch zielgerichtet Medatatensatz akutalisieren
         self.dataset_id = data[0][9]
         
         self.textbox_title.setPlainText(data[0][0])
@@ -242,19 +297,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.textbox_link_format.clear()
         self.lineEdit_link_size.clear()
         
-        # get links and fill comboBox
-        self.comboBox_linknames.clear()
-        self.links = query_to_ordereddict(connection, 'id',
-                  ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
-                  f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
-        self.current_link_id = None  # heißt: gibt noch keinen Link, der angezeigt werden kann
-        if self.links:
-            for link in self.links.values():
-                self.comboBox_linknames.addItem(link['name'], link['id'])
-            self.comboBox_linknames.setCurrentIndex(0)
-            LOGGER.info(f'open_editor(): {self.current_link_id=}')
-            self.fill_linkinfos()
-        
         # get link types and fill comboBox
         self.comboBox_link_types.clear()
         link_types = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.type' ORDER BY item_order, code")
@@ -269,6 +311,18 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.comboBox_link_mimes.addItem(f"{link_mime['code']}: {link_mime['label']}", link_mime['code'])
         self.comboBox_link_mimes.setCurrentIndex(-1)
         
+        # get links and fill comboBox
+        self.comboBox_linknames.clear()
+        self.links.read_from_db(connection, self.dataset_id)
+        self.current_link_id = None  # heißt: gibt noch keinen Link, der angezeigt werden kann
+        if self.links.count():
+            for link in self.links.get_all():
+                LOGGER.debug(f'  add item {link=}')
+                self.comboBox_linknames.addItem(link['name'], link['id'])
+            self.comboBox_linknames.setCurrentIndex(0)
+            LOGGER.info(f'open_editor(): {self.current_link_id=}')
+            self.fill_linkinfos()
+
         self.show()
         result = self.exec_()
         if not result:
@@ -288,8 +342,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             maximum_optimal_scale = 'NULL'
         
         # Store edited links in database
-        self.save_link(self.links[self.current_link_id])
-        self.store_link_edits_in_database(connection)
+        self.save_link(self.links.get(self.current_link_id))
+        self.links.write_to_db(connection, self.dataset_id)
         self.current_link_id = None  # zurücksetzen für nächstes Mal
         
         new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
