@@ -77,7 +77,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lineEdit_minimum_optimal_scale.setValidator(validator)
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
         self.lineEdit_link_size.setValidator(validator)
-        self.comboBox_linknames.activated.connect(self.fill_linkinfos)
+        self.comboBox_linknames.currentIndexChanged.connect(self.fill_linkinfos)
         self.tabWidget.currentChanged.connect(self.fill_linkinfos)
         self.button_add_link.clicked.connect(self.new_link)
         #self.button_remove_lick.clicked.connect(self.remove_link)
@@ -106,8 +106,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if 'status' not in link:
             link['status'] = 'update'
         dlg_name = self.textbox_link_name.toPlainText()
+        
+        # Namen in Combobox aktualisieren
         if link['name'] != dlg_name:
-            self.comboBox_linknames.setItemText(self.comboBox_linknames.currentIndex(),
+            # Combobox ist evtl. schon auf neuem Link, darum Index für bearbeiteten Link suchen
+            savelink_combobox_idx = self.comboBox_linknames.findData(link['id'])
+            LOGGER.info(f'  ComboBox: {dlg_name=}, {self.comboBox_linknames.currentIndex()=}, {savelink_combobox_idx=}')
+            self.comboBox_linknames.setItemText(savelink_combobox_idx,
                                                 '*' + dlg_name)
             link['name'] = dlg_name
         link['type'] = self.comboBox_link_types.currentData()
@@ -118,9 +123,15 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         link['size'] = self.lineEdit_link_size.text()
             
     def fill_linkinfos(self):
+        LOGGER.info('fill_linkinfos()')
         if self.tabWidget.currentIndex() != 3:  # Tab für Links ausgewählt
+            LOGGER.info('  nicht im Tab -> fertig')
             return
-        if self.current_link_id:  # neuer Link ausgewählt, gibt einen vorherigen Link
+        if self.current_link_id == self.comboBox_linknames.currentData():
+            LOGGER.info('  kein neuer Link gewählt -> fertig')
+            return
+        if self.current_link_id:
+            LOGGER.info(f'  neuer Link gewählt: {self.current_link_id=} speichern')
             self.save_link(self.links[self.current_link_id])
 
         # empty all boxes from former entries
@@ -134,8 +145,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
         # get ID of currently selected link
         self.current_link_id = self.comboBox_linknames.currentData()
+        LOGGER.info(f'  neu {self.current_link_id=}')
         
         current_link = self.links[self.current_link_id]
+        # FIXME: sind die ifs nötig?
         if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
         index = self.comboBox_link_types.findData(current_link['type'])
         if current_link['type']:        self.comboBox_link_types.setCurrentIndex(index)
@@ -235,10 +248,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.links = query_to_ordereddict(connection, 'id',
                   ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
                   f"FROM pgmetadata.link WHERE fk_id_dataset = {self.dataset_id} ORDER BY type")
-        self.current_link_id = None  # noch kein vorheriger Link
-        for link in self.links.values():
-            self.comboBox_linknames.addItem(link['name'], link['id'])
-        self.comboBox_linknames.setCurrentIndex(0)
+        self.current_link_id = None  # heißt: gibt noch keinen Link, der angezeigt werden kann
+        if self.links:
+            for link in self.links.values():
+                self.comboBox_linknames.addItem(link['name'], link['id'])
+            self.comboBox_linknames.setCurrentIndex(0)
+            LOGGER.info(f'open_editor(): {self.current_link_id=}')
+            self.fill_linkinfos()
         
         # get link types and fill comboBox
         self.comboBox_link_types.clear()
@@ -247,7 +263,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.comboBox_link_types.addItem(link_type['label'], link_type['code'])
         self.comboBox_link_types.setCurrentIndex(-1)
         
-        # get link mimes and fill comboBox
+        # get MIME types and fill comboBox
         self.comboBox_link_mimes.clear()
         link_mimes = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.mime' ORDER BY item_order, code")
         for link_mime in link_mimes.values():
