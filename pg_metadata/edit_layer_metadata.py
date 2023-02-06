@@ -2,7 +2,7 @@
 """
 Created on Thu Sep  8 14:16:32 2022
 
-@author: praktikum2
+@author: Anton Kraus
 """
 
 import logging
@@ -159,10 +159,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if current_link['mime']:        self.comboBox_link_mimes.setCurrentIndex(index)
         if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
 
-    def save_link_edits_to_database(self, connection):
-        if not self.current_link_id:
+    def store_link_edits_in_database(self, connection):
+        if not self.links:
             return
-        self.save_link(self.links[self.current_link_id])
         for link in self.links.values():
             if 'status' not in link.keys():
                 continue
@@ -273,6 +272,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.show()
         result = self.exec_()
         if not result:
+            self.current_link_id = None  # zurücksetzen für nächstes Mal
             return False
         
         title = self.textbox_title.toPlainText()
@@ -287,8 +287,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if not maximum_optimal_scale:
             maximum_optimal_scale = 'NULL'
         
-        #Call SQL for update links (also for "add link")
-        self.save_link_edits_to_database(connection)
+        # Store edited links in database
+        self.save_link(self.links[self.current_link_id])
+        self.store_link_edits_in_database(connection)
+        self.current_link_id = None  # zurücksetzen für nächstes Mal
         
         new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
