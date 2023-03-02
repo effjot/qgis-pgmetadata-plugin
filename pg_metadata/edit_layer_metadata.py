@@ -123,7 +123,7 @@ class Links:
                     QMessageBox.warning(self, 'Information', 'Fehlende Einträge für neuen Link.')
                     return
             if link['status'] == 'remove':
-                pass
+                sql = f"DELETE FROM pgmetadata.link WHERE id = {link['id']}"
             try:
                 connection.executeSql(sql)
             except QgsProviderConnectionException as e:
@@ -159,7 +159,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.comboBox_linknames.currentIndexChanged.connect(self.fill_linkinfos)
         self.tabWidget.currentChanged.connect(self.fill_linkinfos)
         self.button_add_link.clicked.connect(self.new_link)
-        #self.button_remove_lick.clicked.connect(self.remove_link)
+        
+        #self.button_remove_link.clicked.connect(self.remove_link)
+        
         self.links = Links()
 
     def new_link(self):
