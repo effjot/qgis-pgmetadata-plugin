@@ -3,8 +3,8 @@ BEGIN;
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 10.15 (Debian 10.15-1.pgdg100+1)
--- Dumped by pg_dump version 10.15 (Debian 10.15-1.pgdg100+1)
+-- Dumped from database version 11.7 (Debian 11.7-2.pgdg100+1)
+-- Dumped by pg_dump version 11.7 (Debian 11.7-2.pgdg100+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -52,7 +52,8 @@ CREATE VIEW pgmetadata.v_contact AS
     c.organisation_unit,
     ((((glossary.dict -> 'contact.contact_role'::text) -> dc.contact_role) -> 'label'::text) ->> glossary.locale) AS contact_role,
     dc.contact_role AS contact_role_code,
-    c.email
+    c.email,
+    c.phone
    FROM glossary,
     ((pgmetadata.dataset_contact dc
      JOIN pgmetadata.dataset d ON ((d.id = dc.fk_id_dataset)))

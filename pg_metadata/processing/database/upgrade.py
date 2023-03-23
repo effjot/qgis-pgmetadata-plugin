@@ -1,23 +1,18 @@
 __copyright__ = "Copyright 2020, 3Liz"
 __license__ = "GPL version 3"
 __email__ = "info@3liz.org"
-__revision__ = "$Format:%H$"
 
 import os
 
 from qgis.core import (
-    Qgis,
     QgsAbstractDatabaseProviderConnection,
     QgsProcessingException,
     QgsProcessingOutputString,
     QgsProcessingParameterBoolean,
-    QgsProcessingParameterString,
+    QgsProcessingParameterProviderConnection,
     QgsProviderConnectionException,
     QgsProviderRegistry,
 )
-
-if Qgis.QGIS_VERSION_INT >= 31400:
-    from qgis.core import QgsProcessingParameterProviderConnection
 
 from pg_metadata.connection_manager import add_connection, connections_list
 from pg_metadata.processing.database.base import BaseDatabaseAlgorithm
@@ -30,6 +25,17 @@ from pg_metadata.qgis_plugin_tools.tools.version import (
 )
 
 SCHEMA = 'pgmetadata'
+
+
+def available_local_migration():
+    """Get local migration file, if available. Related to available_migrations()
+    in database.py in submodule qgis_plugin_tools"""
+    upgrade_dir = plugin_path("install", "sql", "upgrade")
+    local_migration_file = os.path.join(upgrade_dir, 'local.sql')
+    if os.path.isfile(local_migration_file):
+        return local_migration_file
+    else:
+        return None
 
 
 class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
@@ -59,34 +65,14 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         else:
             connection_name = ''
 
-        label = tr("Connection to the PostgreSQL database")
-        tooltip = tr("The database where the schema '{}' is installed.").format(SCHEMA)
-        if Qgis.QGIS_VERSION_INT >= 31400:
-            param = QgsProcessingParameterProviderConnection(
-                self.CONNECTION_NAME,
-                label,
-                "postgres",
-                defaultValue=connection_name,
-                optional=False,
-            )
-        else:
-            param = QgsProcessingParameterString(
-                self.CONNECTION_NAME,
-                label,
-                defaultValue=connection_name,
-                optional=False,
-            )
-            param.setMetadata(
-                {
-                    "widget_wrapper": {
-                        "class": "processing.gui.wrappers_postgis.ConnectionWidgetWrapper"
-                    }
-                }
-            )
-        if Qgis.QGIS_VERSION_INT >= 31600:
-            param.setHelp(tooltip)
-        else:
-            param.tooltip_3liz = tooltip
+        param = QgsProcessingParameterProviderConnection(
+            self.CONNECTION_NAME,
+            tr("Connection to the PostgreSQL database"),
+            "postgres",
+            defaultValue=connection_name,
+            optional=False,
+        )
+        param.setHelp(tr("The database where the schema '{}' is installed.").format(SCHEMA))
         self.addParameter(param)
 
         param = QgsProcessingParameterBoolean(
@@ -94,11 +80,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
             tr("Use this checkbox to upgrade."),
             defaultValue=False,
         )
-        tooltip = tr("For security reason, we ask that you explicitly use this checkbox.")
-        if Qgis.QGIS_VERSION_INT >= 31600:
-            param.setHelp(tooltip)
-        else:
-            param.tooltip_3liz = tooltip
+        param.setHelp(tr("For security reason, we ask that you explicitly use this checkbox."))
         self.addParameter(param)
 
         self.addOutput(
@@ -112,12 +94,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
             msg = tr("You must use the checkbox to do the upgrade !")
             return False, msg
 
-        if Qgis.QGIS_VERSION_INT >= 31400:
-            connection_name = self.parameterAsConnectionName(
-                parameters, self.CONNECTION_NAME, context)
-        else:
-            connection_name = self.parameterAsString(
-                parameters, self.CONNECTION_NAME, context)
+        connection_name = self.parameterAsConnectionName(parameters, self.CONNECTION_NAME, context)
 
         metadata = QgsProviderRegistry.instance().providerMetadata('postgres')
         connection = metadata.findConnection(connection_name)
@@ -136,13 +113,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         return super().checkParameterValues(parameters, context)
 
     def processAlgorithm(self, parameters, context, feedback):
-        if Qgis.QGIS_VERSION_INT >= 31400:
-            connection_name = self.parameterAsConnectionName(
-                parameters, self.CONNECTION_NAME, context)
-        else:
-            connection_name = self.parameterAsString(
-                parameters, self.CONNECTION_NAME, context)
-
+        connection_name = self.parameterAsConnectionName(parameters, self.CONNECTION_NAME, context)
         metadata = QgsProviderRegistry.instance().providerMetadata('postgres')
 
         connection = metadata.findConnection(connection_name)
@@ -160,7 +131,7 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         feedback.pushInfo("Current database version '{}'.".format(db_version))
 
         # Get plugin version
-        plugin_version = version()
+        plugin_version = version().split('+')[0]  # remove trailing '+xxx' local version
         if plugin_version in ["master", "dev"]:
             migrations = available_migrations(000000)
             last_migration = migrations[-1]
@@ -179,6 +150,22 @@ class UpgradeDatabaseStructure(BaseDatabaseAlgorithm):
         results = {
             self.DATABASE_VERSION: plugin_version
         }
+
+        # Run local migration file if database is up to date to the release version
+        local_migration = available_local_migration()
+        if db_version == plugin_version and local_migration:
+            feedback.pushInfo(tr("Running local migration from {}.").format(local_migration))
+            with open(local_migration, "r", encoding='utf8') as f:
+                sql = f.read()
+            if len(sql.strip()) == 0:
+                feedback.pushInfo("* " + local_migration + " -- " + tr("SKIPPING, EMPTY FILE"))
+            else:
+                try:
+                    connection.executeSql(sql)
+                except QgsProviderConnectionException as e:
+                    connection.executeSql("ROLLBACK;")
+                    raise QgsProcessingException(str(e))
+            return results
 
         # Return if nothing to do
         if db_version == plugin_version:

@@ -1,11 +1,45 @@
 # Changelog
 
-## Unreleased
-
-* Add raster support
+## 1.2.1+gci1 - 2022-09-07
+* Merged with current upstream/master (release 1.2.1)
+from 1.2.0gci:
+* New field "project_number"
+* Add German translation of administration project
+* Separate create and upgrade SQL files for local changes to database structure
 * New button "Add all theme layers"
 * New field "license_attribution" for CC-by attributions, license grant numbers, etc.
 * Complete set of ISO 19115 publication frequency terms
+
+## 1.2.0+gci2 - 2022-09-07
+* Merged with current upstream/master (release 1.2.0)
+* New field "project_number"
+* Add German translation of administration project
+* Separate create and upgrade SQL files for local changes to database structure
+
+## 1.2.0+gci1 - 2022-08-11
+* Add phone number field -> already merged into upstream/master
+
+## 1.2.0+gci - 2022-04-28
+* New button "Add all theme layers"
+* New field "license_attribution" for CC-by attributions, license grant numbers, etc.
+* Complete set of ISO 19115 publication frequency terms
+
+## Unreleased
+
+## 1.2.1 - 2022-09-07
+
+* Fix a warning about invalid database
+* Add the phone field to "Contacts" in the administration project
+
+## 1.2.0 - 2022-09-05
+
+* License - Release PgMetadata under the GNU General Public License v2.0.
+* Raise the QGIS minimum version to 3.16
+* Add raster support (contribution from @effjot Florian Jenn)
+* Fix handling of backslashes in file:// links to Windows files (contribution from @effjot Florian Jenn)
+* Add phone number field (contribution from @effjot Florian Jenn)
+* Email links are now clickable
+* Connection names are now separated by `!!::!!` so that semicolons (former separator) can be used in connection names
 
 ## 1.1.1 - 2022-02-14
 

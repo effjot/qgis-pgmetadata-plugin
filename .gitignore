@@ -19,7 +19,7 @@ docs/CONTRIBUTING.md
 pg_metadata.*.zip
 plugins.xml
 pg_metadata/i18n/*.ts
-pg_metadata/i18n/*.qm
+#pg_metadata/i18n/*.qm
 
 # Temp files
 *~

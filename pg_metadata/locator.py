@@ -10,9 +10,9 @@ from qgis.core import (
     QgsProject,
     QgsProviderConnectionException,
     QgsProviderRegistry,
+    QgsRasterLayer,
     QgsSettings,
     QgsVectorLayer,
-    QgsRasterLayer,
 )
 from qgis.PyQt.QtCore import QLocale
 from qgis.PyQt.QtWidgets import QDockWidget
@@ -53,7 +53,7 @@ class LocatorFilter(QgsLocatorFilter):
             return
 
         connections, message = connections_list()
-        if not connections:
+        if message or not connections:  # FIXME: log if there are messages or only when no connections?
             self.logMessage(message, Qgis.Critical)
 
         for connection in connections:
@@ -76,7 +76,7 @@ class LocatorFilter(QgsLocatorFilter):
         # Search items from pgmetadata.dataset
         locale = QgsSettings().value("locale/userLocale", QLocale().name())
         locale = locale.split('_')[0].lower()
-        sql = "SELECT concat(d.title, ' (', d.table_name, '.', d.schema_name, ')') AS displayString,"
+        sql = "SELECT concat(d.title, ' (', d.schema_name, '.',d.table_name, ')') AS displayString,"
         sql += " d.schema_name, d.table_name, d.geometry_type, title"
         sql += " FROM pgmetadata.export_datasets_as_flat_table('{locale}') d"
         sql += " INNER JOIN pgmetadata.v_valid_dataset v"
@@ -105,27 +105,29 @@ class LocatorFilter(QgsLocatorFilter):
                 'schema': item[1],
                 'table': item[2],
                 'geometry_type': item[3]
-            }    
+            }
             self.resultFetched.emit(result)
 
     def triggerResult(self, result):
         """ Add the layer selected by the user """
-        
+
         metadata = QgsProviderRegistry.instance().providerMetadata('postgres')
         connection = metadata.findConnection(result.userData['connection'])
 
         schema_name = result.userData['schema']
         table_name = result.userData['table']
 
-        if Qgis.QGIS_VERSION_INT < 31200:
-            table = [t for t in connection.tables(schema_name) if t.tableName() == table_name][0]
-        else:
-            table = connection.table(schema_name, table_name)
+        table = connection.table(schema_name, table_name)
 
         uri = QgsDataSourceUri(connection.uri())
         uri.setSchema(schema_name)
         uri.setTable(table_name)
         uri.setGeometryColumn(table.geometryColumn())
+        geom_types = table.geometryColumnTypes()
+        if geom_types:
+            # Take the first one
+            uri.setWkbType(geom_types[0].wkbType)
+        # TODO, we should try table.crsList() and uri.setSrid()
         pk = table.primaryKeyColumns()
         if pk:
             uri.setKeyColumn(pk[0])
@@ -136,15 +138,15 @@ class LocatorFilter(QgsLocatorFilter):
                 # Take the first one
                 uri.setWkbType(geom_types[0].wkbType)
             # TODO, we should try table.crsList() and uri.setSrid()
-    
+
             layer = QgsVectorLayer(uri.uri(), result.userData['name'], 'postgres')
             # Maybe there is a default style, you should load it
-            layer.loadDefaultStyle()            
-            
-        else:       
+            layer.loadDefaultStyle()
+
+        else:
             layer = QgsRasterLayer(uri.uri(), result.userData['name'], 'postgresraster')
             # NOTE: raster styles cannot be stored in database yet
-        
+
         QgsProject.instance().addMapLayer(layer)
 
         auto_open_dock = QgsSettings().value("pgmetadata/auto_open_dock", True, type=bool)

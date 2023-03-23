@@ -1,17 +1,18 @@
 __copyright__ = "Copyright 2020, 3Liz"
 __license__ = "GPL version 3"
 __email__ = "info@3liz.org"
-__revision__ = "$Format:%H$"
+
+import os
+import shutil
 
 from qgis.core import (
-    Qgis,
+    QgsProcessingParameterEnum,
     QgsProcessingParameterFileDestination,
-    QgsProcessingParameterString,
+    QgsProcessingParameterProviderConnection,
     QgsProviderRegistry,
+    QgsSettings,
 )
-
-if Qgis.QGIS_VERSION_INT >= 31400:
-    from qgis.core import QgsProcessingParameterProviderConnection
+from qgis.PyQt.QtCore import QLocale
 
 from pg_metadata.connection_manager import add_connection, connections_list
 from pg_metadata.qgis_plugin_tools.tools.algorithm_processing import (
@@ -22,11 +23,15 @@ from pg_metadata.qgis_plugin_tools.tools.resources import resources_path
 
 SCHEMA = 'pgmetadata'
 
+LANG_CODES = ['en', 'fr', 'de', 'it', 'es']
+LANGUAGES = [tr('English'), tr('French'), tr('German'), tr('Italian'), tr('Spanish')]
+# TODO: sorting? Currently, alphabetically by English name
+
 
 class CreateAdministrationProject(BaseProcessingAlgorithm):
-
     CONNECTION_NAME = 'CONNECTION_NAME'
     PROJECT_FILE = 'PROJECT_FILE'
+    PROJECT_LANG = 'PROJECT_LANG'
 
     OUTPUT_STATUS = 'OUTPUT_STATUS'
     OUTPUT_STRING = 'OUTPUT_STRING'
@@ -61,34 +66,14 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         else:
             connection_name = ''
 
-        label = tr("Connection to the PostgreSQL database")
-        tooltip = tr("The database where the schema '{}' is installed.").format(SCHEMA)
-        if Qgis.QGIS_VERSION_INT >= 31400:
-            param = QgsProcessingParameterProviderConnection(
-                self.CONNECTION_NAME,
-                label,
-                "postgres",
-                defaultValue=connection_name,
-                optional=False,
-            )
-        else:
-            param = QgsProcessingParameterString(
-                self.CONNECTION_NAME,
-                label,
-                defaultValue=connection_name,
-                optional=False,
-            )
-            param.setMetadata(
-                {
-                    "widget_wrapper": {
-                        "class": "processing.gui.wrappers_postgis.ConnectionWidgetWrapper"
-                    }
-                }
-            )
-        if Qgis.QGIS_VERSION_INT >= 31600:
-            param.setHelp(tooltip)
-        else:
-            param.tooltip_3liz = tooltip
+        param = QgsProcessingParameterProviderConnection(
+            self.CONNECTION_NAME,
+            tr("Connection to the PostgreSQL database"),
+            "postgres",
+            defaultValue=connection_name,
+            optional=False,
+        )
+        param.setHelp(tr("The database where the schema '{}' is installed.").format(SCHEMA))
         self.addParameter(param)
 
         # target project file
@@ -99,11 +84,22 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
             optional=False,
             fileFilter='QGS project (*.qgs)',
         )
-        tooltip = tr("The destination file where to create the QGIS project.").format(SCHEMA)
-        if Qgis.QGIS_VERSION_INT >= 31600:
-            param.setHelp(tooltip)
+        param.setHelp(tr("The destination file where to create the QGIS project.").format(SCHEMA))
+        # FIXME: is the .format(SCHEMA) necessary?
+        self.addParameter(param)
+
+        # target project language, selection defaults to user’s locale if available
+        locale = QgsSettings().value("locale/userLocale", QLocale().name())
+        if locale and locale in LANG_CODES:
+            default_lang = LANG_CODES.index(locale)
         else:
-            param.tooltip_3liz = tooltip
+            default_lang = 0
+        param = QgsProcessingParameterEnum(
+            self.PROJECT_LANG,
+            tr('Language for the admin project and the metadata terms (glossary) in the admin forms.'),
+            options=LANGUAGES,
+            defaultValue=default_lang, optional=False)
+        param.setHelp(tr('The language for the metadata terms (glossary).'))
         self.addParameter(param)
 
     def checkParameterValues(self, parameters, context):
@@ -117,12 +113,7 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
 
     def processAlgorithm(self, parameters, context, feedback):
 
-        if Qgis.QGIS_VERSION_INT >= 31400:
-            connection_name = self.parameterAsConnectionName(
-                parameters, self.CONNECTION_NAME, context)
-        else:
-            connection_name = self.parameterAsString(
-                parameters, self.CONNECTION_NAME, context)
+        connection_name = self.parameterAsConnectionName(parameters, self.CONNECTION_NAME, context)
 
         # Write the file out again
         project_file = self.parameterAsString(parameters, self.PROJECT_FILE, context)
@@ -141,10 +132,25 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         with open(project_file, 'w', encoding='utf8') as fout:
             fout.write(file_data)
 
+        # Copy the translation file
+        lang = LANG_CODES[self.parameterAsEnum(parameters, self.PROJECT_LANG, context)]
+        if lang != 'en':
+            translation_src = template_file.replace('.qgs', f'_{lang}.qm')
+            translation_dst = project_file.replace('.qgs', f'_{lang}.qm')
+            if lang and os.path.isfile(translation_src):
+                feedback.pushInfo(tr(f'Providing translation file for language “{lang}”'))
+                shutil.copyfile(translation_src, translation_dst)
+            else:
+                feedback.pushInfo(tr(f'No translation available for language “{lang}”'))
+                lang = ''  # indicate missing translation in algorithm result
+
         add_connection(connection_name)
 
         msg = tr('QGIS Administration project has been successfully created from the database connection')
         msg += ': {}'.format(connection_name)
         feedback.pushInfo(msg)
 
-        return {}
+        return {
+            self.PROJECT_FILE: project_file,
+            self.PROJECT_LANG: lang
+        }
