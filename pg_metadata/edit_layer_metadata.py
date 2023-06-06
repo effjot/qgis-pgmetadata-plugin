@@ -140,8 +140,11 @@ class Links:
     
     def update(self):  # TODO PgMetadataLayerEditor.save_link() hier einbauen
         """Update link data and mark for database update"""
-        pass
-    
+        link = self.links[self.current_link_id]
+        if 'status' not in link:
+            link['status'] = 'update'
+        
+        
     def remove(self, id):
         """Mark link for removal from metadata in database"""
         pass
