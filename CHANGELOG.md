@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 1.2.3-gci1 - 2023-06-08
+* Merged with current upstream/master (release 1.2.2)
+from 1.2.2-gci2:
+* Localisation of scale fraction
+* New field "project_number"
+* Add German translation of administration project
+* Separate create and upgrade SQL files for local changes to database structure
+* New button "Add all theme layers"
+* New field "license_attribution" for CC-by attributions, license grant numbers, etc.
+* Complete set of ISO 19115 publication frequency terms
+
+## 1.2.2 - 2023-05-15
+
+* Fix "array exceeds maximum" for layers with many features (contribution from @effjot Florian Jenn)
+
 ## 1.2.2-gci2 - 2022-12-07
 * Localisation of scale fraction
 
@@ -15,24 +30,17 @@ from 1.2.0gci:
 * New field "license_attribution" for CC-by attributions, license grant numbers, etc.
 * Complete set of ISO 19115 publication frequency terms
 
+## 1.2.1 - 2022-09-07
+
+* Fix a warning about invalid database
+* Add the phone field to "Contacts" in the administration project
+
 ## 1.2.0+gci2 - 2022-09-07
 * Merged with current upstream/master (release 1.2.0)
 * New field "project_number"
 * Add German translation of administration project
 * Separate create and upgrade SQL files for local changes to database structure
 
-## 1.2.0+gci1 - 2022-08-11
-* Add phone number field -> already merged into upstream/master
-
-## 1.2.0+gci - 2022-04-28
-* New button "Add all theme layers"
-* New field "license_attribution" for CC-by attributions, license grant numbers, etc.
-* Complete set of ISO 19115 publication frequency terms
-
-## 1.2.1 - 2022-09-07
-
-* Fix a warning about invalid database
-* Add the phone field to "Contacts" in the administration project
 
 ## 1.2.0 - 2022-09-05
 
@@ -43,6 +51,14 @@ from 1.2.0gci:
 * Add phone number field (contribution from @effjot Florian Jenn)
 * Email links are now clickable
 * Connection names are now separated by `!!::!!` so that semicolons (former separator) can be used in connection names
+
+## 1.2.0+gci1 - 2022-08-11
+* Add phone number field -> already merged into upstream/master
+
+## 1.2.0+gci - 2022-04-28
+* New button "Add all theme layers"
+* New field "license_attribution" for CC-by attributions, license grant numbers, etc.
+* Complete set of ISO 19115 publication frequency terms
 
 ## 1.1.1 - 2022-02-14
 
