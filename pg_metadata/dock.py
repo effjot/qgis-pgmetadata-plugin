@@ -100,7 +100,6 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         self.theme_layers.clicked.connect(self.add_theme_layers)
 
         # Add edit layer button
-        self.edit_dialog = PgMetadataLayerEditor()
         self.edit_layer.setText('')
         self.edit_layer.setEnabled(False)
         self.edit_layer.setToolTip(tr("Open dialog window to edit metadata"))
@@ -491,10 +490,14 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                                        level=Qgis.Info)
 
     def edit_layer_metadata(self):
-        LOGGER.debug(f'edit_layer_metadata(): {self.current_datasource_uri=}, {self.current_connection=}')
-        updated = self.edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
+        edit_dialog = PgMetadataLayerEditor()
+        updated = edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
         LOGGER.debug(f'edit_dialog returned {updated=}')
         if updated:
+            iface.messageBar().pushSuccess(
+                tr("Edit metadata"),
+                tr("Metadata for layer {} has been edited and successfully stored").format(
+                    self.current_datasource_uri.table()))
             self.layer_changed(iface.activeLayer())
 
     @staticmethod

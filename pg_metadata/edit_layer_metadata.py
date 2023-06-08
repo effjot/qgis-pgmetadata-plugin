@@ -2,7 +2,7 @@
 """
 Created on Thu Sep  8 14:16:32 2022
 
-@author: Anton Kraus
+@author: Anton Kraus, Florian Jenn
 """
 
 import logging
@@ -22,6 +22,7 @@ EDITDIALOG_CLASS = load_ui('edit_metadata_dialog.ui')
 
 
 def postgres_array_to_list(s: str) -> list[str]:
+    #TODO: vielleicht https://qgis.org/pyqgis/master/core/QgsPostgresStringUtils.html verwendbar?
     l = s[1:-1].split(',')
     if len(l[0]) > 0:
         return l
@@ -96,6 +97,11 @@ class Links:
     def get_all(self):
         return self.links.values()
 
+    def delete(self, id: int):
+        if id not in self.links:
+            return
+        del self.links[id]
+    
     def read_from_db(self, connection, dataset_id: int, sort_key='name'):
         self.clear()
         self.links = query_to_ordereddict(
@@ -111,19 +117,27 @@ class Links:
                 continue
             size = link['size'] if link['size'] else 'NULL'
             if link['status'] == 'update':
-                sql = f"UPDATE pgmetadata.link SET name = '{link['name']}', type = '{link['type']}', "
-                sql += f"url = '{link['url']}', description = '{link['description']}', format = '{link['format']}', mime = '{link['mime']}', size = {size} "
+                #FIXME: dollar quoting for fields that likely could contain quote characters
+                #  -> parametrized queries possible with pyqgis?
+                sql = f"UPDATE pgmetadata.link SET name = $quote${link['name']}$quote$, type = '{link['type']}', "
+                sql += f"url = $quote${link['url']}$quote$, description = $quote${link['description']}$quote$, format = '{link['format']}', mime = '{link['mime']}', size = {size} "
                 sql += f"WHERE id = {link['id']}"
+                LOGGER.debug(f"  write_to_db(): update {link['id']} {link['name']}")
+                #LOGGER.debug('sql=')
+                #LOGGER.debug(sql)
             if link['status'] == 'new':
                 if link['name'] and link['url']:
+                    #FIXME: dollar quoting, see above
                     sql = "INSERT INTO pgmetadata.link (name, type, url, description, format, mime, size, fk_id_dataset) "
-                    sql += f"VALUES ('{link['name']}', '{link['type']}', '{link['url']}', '{link['description']}', "
+                    sql += f"VALUES ($quote${link['name']}$quote$, '{link['type']}', $quote${link['url']}$quote$, $quote${link['description']}$quote$, "
                     sql += f"'{link['format']}', '{link['mime']}', {size}, {dataset_id})"
+                    LOGGER.debug(f"  write_to_db(): insert {link['id']} {link['name']}")
                 else:  # Abbruch bei unvollständiger eingabe
                     QMessageBox.warning(self, 'Information', 'Fehlende Einträge für neuen Link.')
                     return
             if link['status'] == 'remove':
                 sql = f"DELETE FROM pgmetadata.link WHERE id = {link['id']}"
+                LOGGER.debug(f"  write_to_db(): delete {link['id']} {link['name']}")
             try:
                 connection.executeSql(sql)
             except QgsProviderConnectionException as e:
@@ -143,13 +157,17 @@ class Links:
         link = self.links.get(link_id)
         for field in link_data:
             link[field] = link_data[field]
-        if 'status' not in link:
+        if 'status' not in link:  # Do not overwrite "new" status
             link['status'] = 'update'
         
-    def remove(self, link_id):
+    def mark_delete(self, link_id):
         """Mark current link for removal from metadata in database"""
         link = self.links.get(link_id)
-        link['status'] = 'remove'
+        LOGGER.debug(f'  mark_delete(): {link_id=}, {link=}')
+        if 'status' not in link or link['status'] == 'update':
+            link['status'] = 'remove'
+        elif link['status'] == 'new':
+            self.links.delete(link_id)
 
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
@@ -163,6 +181,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.comboBox_linknames.currentIndexChanged.connect(self.links_tab_update_form)
         self.tabWidget.currentChanged.connect(self.links_tab_update_form)
         self.button_add_link.clicked.connect(self.new_link)
+        self.button_remove_link.clicked.connect(self.remove_link)
         
         #self.button_remove_link.clicked.connect(self.remove_link)
         
@@ -186,6 +205,14 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.comboBox_linknames.addItem('(Neuer Link)', new_id)
         self.comboBox_linknames.setCurrentIndex(self.comboBox_linknames.count() - 1)
 
+    def remove_link(self):        
+        idx = self.comboBox_linknames.currentIndex()
+        LOGGER.debug(f'  remove_link() before: {idx=}, {self.current_link_id=}')
+        self.links.mark_delete(self.current_link_id)
+        self.current_link_id = None
+        self.comboBox_linknames.removeItem(idx)
+        LOGGER.debug(f'  remove_link() after: {self.comboBox_linknames.currentIndex()=}, {self.current_link_id=}')
+        
     def save_link(self, link_id):
         """Link-Daten aus Dialog holen und in 'self.links[link_id]' merken"""
         if not link_id:
@@ -196,7 +223,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if link['name'] != dlg_name:
             # Combobox ist evtl. schon auf neuem Link, darum Index für bearbeiteten Link suchen
             savelink_combobox_idx = self.comboBox_linknames.findData(link['id'])
-            LOGGER.info(f'  ComboBox: {dlg_name=}, {self.comboBox_linknames.currentIndex()=}, {savelink_combobox_idx=}')
+            LOGGER.debug(f'  ComboBox: {dlg_name=}, {self.comboBox_linknames.currentIndex()=}, {savelink_combobox_idx=}')
             self.comboBox_linknames.setItemText(savelink_combobox_idx,
                                                 '*' + dlg_name)       
         self.links.update(link_id, link_data={
@@ -210,7 +237,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             })
 
     def links_tab_update_form(self):
-        LOGGER.info(f'links_tab_update_form()')
+        LOGGER.debug(f'links_tab_update_form()')
         if self.tabWidget.tabText(self.tabWidget.currentIndex()) != 'Links':
             LOGGER.debug('  nicht im Tab -> fertig')
             return
@@ -225,7 +252,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
         # get ID of currently selected link
         self.current_link_id = self.comboBox_linknames.currentData()
-        LOGGER.info(f'  neu {self.current_link_id=}')
+        idx = self.comboBox_linknames.currentIndex()
+        LOGGER.debug(f'  neu {idx=}; {self.current_link_id=}')
         
         current_link = self.links.get(self.current_link_id)
         # FIXME: sind die ifs nötig?
@@ -240,10 +268,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
 
     def prepare_editor(self, datasource_uri, connection):
-        # FIXME: Methode zerlegen in Öffnen=Felder befüllen, _exec(), Schließen/Speichern
         self.table = datasource_uri.table()
         self.schema = datasource_uri.schema()
-        LOGGER.info(f'Edit layer type {datasource_uri.table()}, {connection}')
+        LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
         sql = (f"SELECT title, abstract, project_number, categories, keywords, themes, minimum_optimal_scale, maximum_optimal_scale, data_last_update, id, spatial_level FROM pgmetadata.dataset "
                f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
         try:
@@ -313,10 +340,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.current_link_id = None  # heißt: gibt noch keinen Link, der angezeigt werden kann
         if self.links.count():
             for link in self.links.get_all():
-                LOGGER.debug(f'  add item {link=}')
+                #LOGGER.debug(f'  add item {link=}')
                 self.comboBox_linknames.addItem(link['name'], link['id'])
             self.comboBox_linknames.setCurrentIndex(0)
-            LOGGER.info(f'open_editor(): {self.current_link_id=}')
+            LOGGER.debug(f'open_editor(): {self.current_link_id=}')
             self.links_tab_update_form()
 
     def open_editor(self, datasource_uri, connection):
