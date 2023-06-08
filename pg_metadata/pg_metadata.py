@@ -68,9 +68,9 @@ class PgMetadata:
             self.dock = PgMetadataDock()
             iface.addDockWidget(Qt.RightDockWidgetArea, self.dock)
 
-            # Open/close the dock from plugin menu
+            # Open/close the dock from database menu
             self.dock_action = QAction(icon, 'PgMetadata', iface.mainWindow())
-            iface.pluginMenu().addAction(self.dock_action)
+            iface.addPluginToDatabaseMenu(None, self.dock_action)  # None adds to the first level of the menu
             self.dock_action.triggered.connect(self.open_dock)
 
         if not self.locator_filter:
@@ -137,7 +137,7 @@ class PgMetadata:
             del self.locator_filter
 
         if self.dock_action:
-            iface.pluginMenu().removeAction(self.dock_action)
+            iface.removePluginDatabaseMenu(None, self.dock_action)
             del self.dock_action
 
         if self.help_action:
