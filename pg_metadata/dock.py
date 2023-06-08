@@ -396,7 +396,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             return
 
         if not results:
-            iface.messageBar().pushMessage(tr("No themes defined in {}".format(connection_name)),
+            iface.messageBar().pushMessage(tr("No themes defined in {}").format(connection_name),
                                            level=Qgis.Warning)
             return
         available_themes = dict(results)
@@ -426,7 +426,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             return {}
 
         if not layers:
-            iface.messageBar().pushMessage(tr("No tables found for theme {}".format(theme)),
+            iface.messageBar().pushMessage(tr("No tables found for theme {}").format(theme),
                                            level=Qgis.Warning)
             return
         

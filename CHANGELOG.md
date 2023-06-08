@@ -4,6 +4,8 @@
 
 ## 1.2.3-gci1 - 2023-06-08
 * Merged with current upstream/master (release 1.2.2)
+* Move plugin to Database menu
+* Updated German translations
 from 1.2.2-gci2:
 * Localisation of scale fraction
 * New field "project_number"
