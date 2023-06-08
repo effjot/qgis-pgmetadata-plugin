@@ -138,77 +138,80 @@ class Links:
         self.links[new_id] = {'id': new_id, 'name': '', 'url': '', 'status': 'new'}
         return new_id
     
-    def update(self):  # TODO PgMetadataLayerEditor.save_link() hier einbauen
+    def update(self, link_id: int, link_data: dict):  # TODO PgMetadataLayerEditor.save_link() hier einbauen
         """Update link data and mark for database update"""
-        link = self.links[self.current_link_id]
+        link = self.links.get(link_id)
+        for field in link_data:
+            link[field] = link_data[field]
         if 'status' not in link:
             link['status'] = 'update'
         
-        
-    def remove(self, id):
-        """Mark link for removal from metadata in database"""
-        pass
-
+    def remove(self, link_id):
+        """Mark current link for removal from metadata in database"""
+        link = self.links.get(link_id)
+        link['status'] = 'remove'
 
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
     def __init__(self, parent=None):
         super().__init__()
         self.setupUi(self)
-        validator = QIntValidator(1,100000000,self)
+        validator = QIntValidator(1, 100000000, self)
         self.lineEdit_minimum_optimal_scale.setValidator(validator)
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
         self.lineEdit_link_size.setValidator(validator)
-        self.comboBox_linknames.currentIndexChanged.connect(self.fill_linkinfos)
-        self.tabWidget.currentChanged.connect(self.fill_linkinfos)
+        self.comboBox_linknames.currentIndexChanged.connect(self.links_tab_update_form)
+        self.tabWidget.currentChanged.connect(self.links_tab_update_form)
         self.button_add_link.clicked.connect(self.new_link)
         
         #self.button_remove_link.clicked.connect(self.remove_link)
         
         self.links = Links()
 
-    def new_link(self):
-        # empty all boxes from former entries
-        #FIXME: Felder löschen kommt unten nochmal -> in Methode clear_linkinfo() auslagern
-        #self.comboBox_linknames.setCurrentIndex(-1)
+    def clear_linkinfo(self, reset_index: bool):
         self.textbox_link_name.clear()
-        self.comboBox_link_types.setCurrentIndex(-1)
         self.textbox_link_url.clear()
         self.textbox_link_description.clear()
         self.textbox_link_format.clear()
-        self.comboBox_link_mimes.setCurrentIndex(-1)
         self.lineEdit_link_size.clear()
+        if reset_index:
+            self.comboBox_link_types.setCurrentIndex(-1)
+            self.comboBox_link_mimes.setCurrentIndex(-1)
+
+    def new_link(self):
+        #self.comboBox_linknames.setCurrentIndex(-1)
+        self.clear_linkinfo(True)
         new_id = self.links.new()
         self.current_link_id = new_id
         self.comboBox_linknames.addItem('(Neuer Link)', new_id)
         self.comboBox_linknames.setCurrentIndex(self.comboBox_linknames.count() - 1)
 
-    def save_link(self, link):
-        """Link-Daten aus Dialog holen und in 'link' merken"""
-        #TODO gehört auch in Links-Klasse (am besten update() nennen)
-        if 'status' not in link:
-            link['status'] = 'update'
+    def save_link(self, link_id):
+        """Link-Daten aus Dialog holen und in 'self.links[link_id]' merken"""
+        if not link_id:
+            return
         dlg_name = self.textbox_link_name.toPlainText()
-        
         # Namen in Combobox aktualisieren
+        link = self.links.get(link_id)
         if link['name'] != dlg_name:
             # Combobox ist evtl. schon auf neuem Link, darum Index für bearbeiteten Link suchen
             savelink_combobox_idx = self.comboBox_linknames.findData(link['id'])
             LOGGER.info(f'  ComboBox: {dlg_name=}, {self.comboBox_linknames.currentIndex()=}, {savelink_combobox_idx=}')
             self.comboBox_linknames.setItemText(savelink_combobox_idx,
-                                                '*' + dlg_name)
-            link['name'] = dlg_name
-        link['type'] = self.comboBox_link_types.currentData()
-        link['url'] = self.textbox_link_url.toPlainText()
-        link['description'] = self.textbox_link_description.toPlainText()
-        link['format'] = self.textbox_link_format.toPlainText()
-        link['mime'] = self.comboBox_link_mimes.currentData()
-        link['size'] = self.lineEdit_link_size.text()
-            
-    def fill_linkinfos(self):
-        # FIXME: sollte besser update_linkinfo() heißen (ohne s am Ende)
-        LOGGER.info('fill_linkinfos()')
-        if self.tabWidget.currentIndex() != 3:  # Tab für Links ausgewählt
+                                                '*' + dlg_name)       
+        self.links.update(link_id, link_data={
+            'name': dlg_name,
+            'type': self.comboBox_link_types.currentData(),
+            'url': self.textbox_link_url.toPlainText(),
+            'description': self.textbox_link_description.toPlainText(),
+            'format': self.textbox_link_format.toPlainText(),
+            'mime': self.comboBox_link_mimes.currentData(),
+            'size': self.lineEdit_link_size.text()
+            })
+
+    def links_tab_update_form(self):
+        LOGGER.info(f'links_tab_update_form()')
+        if self.tabWidget.tabText(self.tabWidget.currentIndex()) != 'Links':
             LOGGER.debug('  nicht im Tab -> fertig')
             return
         if self.current_link_id == self.comboBox_linknames.currentData():
@@ -216,16 +219,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             return
         if self.current_link_id:
             LOGGER.debug(f'  neuer Link gewählt: {self.current_link_id=} speichern')
-            self.save_link(self.links.get(self.current_link_id))
+            self.save_link(self.current_link_id)
 
-        # empty all boxes from former entries
-        self.textbox_link_name.clear()
-        self.comboBox_link_types.setCurrentIndex(-1)
-        self.textbox_link_url.clear()
-        self.textbox_link_description.clear()
-        self.textbox_link_format.clear()
-        self.comboBox_link_mimes.setCurrentIndex(-1)
-        self.lineEdit_link_size.clear()
+        self.clear_linkinfo(True)
 
         # get ID of currently selected link
         self.current_link_id = self.comboBox_linknames.currentData()
@@ -243,13 +239,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if current_link['mime']:        self.comboBox_link_mimes.setCurrentIndex(index)
         if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
 
-    def open_editor(self, datasource_uri, connection):
+    def prepare_editor(self, datasource_uri, connection):
         # FIXME: Methode zerlegen in Öffnen=Felder befüllen, _exec(), Schließen/Speichern
-        table = datasource_uri.table()
-        schema = datasource_uri.schema()
+        self.table = datasource_uri.table()
+        self.schema = datasource_uri.schema()
         LOGGER.info(f'Edit layer type {datasource_uri.table()}, {connection}')
         sql = (f"SELECT title, abstract, project_number, categories, keywords, themes, minimum_optimal_scale, maximum_optimal_scale, data_last_update, id, spatial_level FROM pgmetadata.dataset "
-               f"WHERE schema_name = '{schema}' and table_name = '{table}'")
+               f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
         try:
             data = connection.executeSql(sql)
         except QgsProviderConnectionException as e:
@@ -275,32 +271,27 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get categories and fill comboBox
         self.comboBox_categories.clear()
-        categories = get_glossary(connection, 'dataset.categories')
-        self.comboBox_categories.addItems(categories.values())  # fill comboBox with categories
+        self.categories = get_glossary(connection, 'dataset.categories')
+        self.comboBox_categories.addItems(self.categories.values())  # fill comboBox with categories
         selected_categories_keys = postgres_array_to_list(data[0][3])
         selected_categories_values = []
         for i in selected_categories_keys:
-            selected_categories_values.append(categories[i])
+            selected_categories_values.append(self.categories[i])
         self.comboBox_categories.setCheckedItems(selected_categories_values)  # set selected categories as checked
         
         # get themes and fill comboBox
         self.comboBox_themes.clear()
-        themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
+        self.themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
         selected_themes_keys = postgres_array_to_list(data[0][5])
         selected_themes_values = []
-        for theme in themes.values():
+        for theme in self.themes.values():
             self.comboBox_themes.addItem(theme['label'], theme['code'])
             for i in selected_themes_keys:
                 if i == theme['code']:
                     selected_themes_values.append(theme['label'])
         self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
         
-        # empty all textboxes for links
-        self.textbox_link_name.clear()
-        self.textbox_link_url.clear()
-        self.textbox_link_description.clear()
-        self.textbox_link_format.clear()
-        self.lineEdit_link_size.clear()
+        self.clear_linkinfo(False)
         
         # get link types and fill comboBox
         self.comboBox_link_types.clear()
@@ -326,14 +317,18 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                 self.comboBox_linknames.addItem(link['name'], link['id'])
             self.comboBox_linknames.setCurrentIndex(0)
             LOGGER.info(f'open_editor(): {self.current_link_id=}')
-            self.fill_linkinfos()
+            self.links_tab_update_form()
 
+    def open_editor(self, datasource_uri, connection):
+        self.prepare_editor(datasource_uri, connection)
         self.show()
         result = self.exec_()
-        if not result:
-            self.current_link_id = None  # zurücksetzen für nächstes Mal
-            return False
-        
+        if result:
+            self.write_edits_to_db(connection)
+        self.current_link_id = None  # zurücksetzen für nächstes Mal
+        return result
+
+    def write_edits_to_db(self, connection):
         title = self.textbox_title.toPlainText()
         abstract = self.textbox_abstract.toPlainText()
         project_number = self.textbox_project_number.toPlainText()
@@ -347,16 +342,15 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             maximum_optimal_scale = 'NULL'
         
         # Store edited links in database
-        self.save_link(self.links.get(self.current_link_id))
+        self.save_link(self.current_link_id)
         self.links.write_to_db(connection, self.dataset_id)
-        self.current_link_id = None  # zurücksetzen für nächstes Mal
         
-        new_categories_keys = dict_reverse_lookup(categories, self.comboBox_categories.checkedItems())
+        new_categories_keys = dict_reverse_lookup(self.categories, self.comboBox_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
         
         new_themes_values = self.comboBox_themes.checkedItems()
         new_themes_keys = []
-        for theme in themes.values():
+        for theme in self.themes.values():
             for i in new_themes_values:
                 if i == theme['label']:
                     new_themes_keys.append(theme['code'])
@@ -365,7 +359,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}', "
                f" keywords = '{keywords}', categories = {new_categories_array}, themes = {new_themes_array}, "
                f" minimum_optimal_scale = {minimum_optimal_scale}, maximum_optimal_scale = {maximum_optimal_scale}, spatial_level = '{spatial_level}' "
-               f"WHERE schema_name = '{schema}' and table_name = '{table}'")
+               f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
         
         try:
             connection.executeSql(sql)
