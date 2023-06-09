@@ -39,7 +39,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="important_metadata">
     <attribute name="title">
@@ -360,7 +360,7 @@
      <string>Veröffentlichung</string>
     </attribute>
    </widget>
-   <widget class="QWidget" name="links">
+   <widget class="QWidget" name="tab_links">
     <attribute name="title">
      <string>Links</string>
     </attribute>
@@ -474,7 +474,7 @@
       <number>15</number>
      </property>
      <property name="placeholderText">
-      <string>QComboBox mit allen Link-Bezeichnungen</string>
+      <string>(keine Links)</string>
      </property>
     </widget>
     <widget class="QTextEdit" name="textbox_link_url">

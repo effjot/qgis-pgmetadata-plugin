@@ -7,7 +7,7 @@ Created on Thu Sep  8 14:16:32 2022
 
 import logging
 from dataclasses import dataclass
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.core import QgsProviderConnectionException
 from PyQt5.QtWidgets import QMessageBox
@@ -62,7 +62,7 @@ def query_to_ordereddict(connection, id_col: str, columns: list[str], from_where
     except QgsProviderConnectionException as e:
         LOGGER.critical(tr('Error when querying the database: ') + str(e))
         return False
-    terms = [dict(zip(columns, row)) for row in rows]
+    terms = [defaultdict(lambda: None, zip(columns, row)) for row in rows]
     terms_by_id = OrderedDict()
     for t in terms:
         terms_by_id[t[id_col]] = t
@@ -79,7 +79,8 @@ class Link:
 
 class Links:
     def __init__(self):
-        self.links = None
+        self.links: OrderedDict = None
+        self.next_new_id: int = -1
         
     def clear(self):
         self.links = None
@@ -89,18 +90,18 @@ class Links:
             return 0
         return len(self.links)
 
-    def get(self, id: int):
-        if id not in self.links:
+    def get(self, link_id: int):
+        if link_id not in self.links:
             return None
-        return self.links[id]
+        return self.links[link_id]
     
     def get_all(self):
         return self.links.values()
 
-    def delete(self, id: int):
-        if id not in self.links:
+    def delete(self, link_id: int):
+        if link_id not in self.links:
             return
-        del self.links[id]
+        del self.links[link_id]
     
     def read_from_db(self, connection, dataset_id: int, sort_key='name'):
         self.clear()
@@ -108,10 +109,26 @@ class Links:
             connection, 'id',
             ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
             f"FROM pgmetadata.link WHERE fk_id_dataset = {dataset_id} ORDER BY {sort_key}")
-        
+    
+    def min_info_missing(self):
+        """FIXE: wahrscheinlich nicht mehr nötig"""
+        missing_info = []
+        for link in self.get_all():
+            if 'status' not in link or link['status'] == 'remove':
+                continue
+            if not (link['name'] and link['url']):
+                missing_info.append(link)
+        if missing_info:
+            QMessageBox.warning(None, 'Unvollständige Links',
+                                'Bei folgenden Link(s) fehlen Name oder URL:\n'
+                                + '\n'.join([f"#{l['id']} {l['name']}: {l['url']}" for l in missing_info]))
+        return missing_info
+
     def write_to_db(self, connection, dataset_id):
         if not self.links:
-            return
+            return True
+        # if self.min_info_missing():
+        #     return False
         for link in self.get_all():
             if 'status' not in link.keys():
                 continue
@@ -133,7 +150,7 @@ class Links:
                     sql += f"'{link['format']}', '{link['mime']}', {size}, {dataset_id})"
                     LOGGER.debug(f"  write_to_db(): insert {link['id']} {link['name']}")
                 else:  # Abbruch bei unvollständiger eingabe
-                    QMessageBox.warning(self, 'Information', 'Fehlende Einträge für neuen Link.')
+                    QMessageBox.warning(None, 'Information', 'Fehlende Einträge für neuen Link.')
                     return
             if link['status'] == 'remove':
                 sql = f"DELETE FROM pgmetadata.link WHERE id = {link['id']}"
@@ -142,14 +159,16 @@ class Links:
                 connection.executeSql(sql)
             except QgsProviderConnectionException as e:
                 LOGGER.critical(tr('Error when updating the database: ') + str(e))
-    
+        return True
+
     def new(self):
         """Create new link with empty data and mark for database insert"""
-        if self.links:
-            new_id = min(self.links) - 1
-        else:
-            new_id = -1
-        self.links[new_id] = {'id': new_id, 'name': '', 'url': '', 'status': 'new'}
+        new_id = self.next_new_id
+        self.links[new_id] = defaultdict(lambda: None,
+                                         {'id': new_id, 'name': '', 'url': '',
+                                          'type': None, 'mime': None, 'status': 'new'})
+        self.next_new_id -= 1
+        LOGGER.debug(f'  Links.new() -> {new_id=}; {self.next_new_id}')
         return new_id
     
     def update(self, link_id: int, link_data: dict):  # TODO PgMetadataLayerEditor.save_link() hier einbauen
@@ -167,7 +186,7 @@ class Links:
         if 'status' not in link or link['status'] == 'update':
             link['status'] = 'remove'
         elif link['status'] == 'new':
-            self.links.delete(link_id)
+            self.delete(link_id)
 
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
@@ -182,8 +201,17 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.tabWidget.currentChanged.connect(self.links_tab_update_form)
         self.button_add_link.clicked.connect(self.new_link)
         self.button_remove_link.clicked.connect(self.remove_link)
+        self.buttonBox.accepted.disconnect()
+        self.buttonBox.accepted.connect(self.dlg_accept)
+        #self.accepted.connect(self.dlg_accept)        
         
-        #self.button_remove_link.clicked.connect(self.remove_link)
+        self.current_tab_idx: int
+        self.prev_tab_idx: int
+        self.current_link_id: int
+    
+        self.current_tab_idx = self.tabWidget.currentIndex()
+        self.link_tab_idx = self.tabWidget.indexOf(self.tab_links)
+        QMessageBox.warning(self, 'Links tab', str(self.link_tab_idx))
         
         self.links = Links()
 
@@ -198,12 +226,14 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.comboBox_link_mimes.setCurrentIndex(-1)
 
     def new_link(self):
-        #self.comboBox_linknames.setCurrentIndex(-1)
-        self.clear_linkinfo(True)
+        if self.links.count() > 0:
+            saved = self.save_link(self.current_link_id)
+            if not saved:
+                return False
         new_id = self.links.new()
-        self.current_link_id = new_id
         self.comboBox_linknames.addItem('(Neuer Link)', new_id)
-        self.comboBox_linknames.setCurrentIndex(self.comboBox_linknames.count() - 1)
+        self.comboBox_linknames.setCurrentIndex(self.comboBox_linknames.findData(new_id))
+        self.current_link_id = new_id
 
     def remove_link(self):        
         idx = self.comboBox_linknames.currentIndex()
@@ -214,30 +244,49 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         LOGGER.debug(f'  remove_link() after: {self.comboBox_linknames.currentIndex()=}, {self.current_link_id=}')
         
     def save_link(self, link_id):
-        """Link-Daten aus Dialog holen und in 'self.links[link_id]' merken"""
+        """Link-Daten aus Dialog holen und merken.
+        
+        Wird vor Aktualisierung der Formularfelder aufgerufen, d.h. die Felder
+        enthalten noch die zu speichernden Daten. self.current_link ist auch
+        noch der zu speichernde Link.  Die Combobox kann aber schon auf dem neuen
+        Link sein.
+        """
+        
         if not link_id:
-            return
-        dlg_name = self.textbox_link_name.toPlainText()
-        # Namen in Combobox aktualisieren
+            return True
         link = self.links.get(link_id)
-        if link['name'] != dlg_name:
-            # Combobox ist evtl. schon auf neuem Link, darum Index für bearbeiteten Link suchen
-            savelink_combobox_idx = self.comboBox_linknames.findData(link['id'])
+        savelink_combobox_idx = self.comboBox_linknames.findData(link_id)
+        dlg_name = self.textbox_link_name.toPlainText()       
+        dlg_url = self.textbox_link_url.toPlainText()
+        
+        if not (dlg_name and dlg_url):  # minimally required information missing
+            self.comboBox_linknames.setCurrentIndex(savelink_combobox_idx)
+            QMessageBox.warning(self, 'Unvollständige Links',
+                                'In diesem Link fehlen Name oder URL. Bitte ergänzen.')
+            return False
+            
+        # Namen in Combobox aktualisieren (Sternchen für Änderungen)
+        if link['name'] != dlg_name:            
             LOGGER.debug(f'  ComboBox: {dlg_name=}, {self.comboBox_linknames.currentIndex()=}, {savelink_combobox_idx=}')
             self.comboBox_linknames.setItemText(savelink_combobox_idx,
                                                 '*' + dlg_name)       
         self.links.update(link_id, link_data={
             'name': dlg_name,
             'type': self.comboBox_link_types.currentData(),
-            'url': self.textbox_link_url.toPlainText(),
+            'url': dlg_url,
             'description': self.textbox_link_description.toPlainText(),
             'format': self.textbox_link_format.toPlainText(),
             'mime': self.comboBox_link_mimes.currentData(),
             'size': self.lineEdit_link_size.text()
             })
+        return True
 
     def links_tab_update_form(self):
-        LOGGER.debug(f'links_tab_update_form()')
+        prev_tab_idx = self.current_tab_idx
+        self.current_tab_idx = self.tabWidget.currentIndex()
+        if prev_tab_idx != self.link_tab_idx:
+            return
+        LOGGER.debug('links_tab_update_form()')
         if self.tabWidget.tabText(self.tabWidget.currentIndex()) != 'Links':
             LOGGER.debug('  nicht im Tab -> fertig')
             return
@@ -246,26 +295,33 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             return
         if self.current_link_id:
             LOGGER.debug(f'  neuer Link gewählt: {self.current_link_id=} speichern')
-            self.save_link(self.current_link_id)
-
+            saved = self.save_link(self.current_link_id)
+            if not saved:
+                return
         self.clear_linkinfo(True)
-
         # get ID of currently selected link
         self.current_link_id = self.comboBox_linknames.currentData()
-        idx = self.comboBox_linknames.currentIndex()
-        LOGGER.debug(f'  neu {idx=}; {self.current_link_id=}')
-        
+        LOGGER.debug(f'  neu {self.comboBox_linknames.currentIndex()=}; {self.current_link_id=}')
         current_link = self.links.get(self.current_link_id)
-        # FIXME: sind die ifs nötig?
-        if current_link['name']:        self.textbox_link_name.setText(current_link['name'])
-        index = self.comboBox_link_types.findData(current_link['type'])
-        if current_link['type']:        self.comboBox_link_types.setCurrentIndex(index)
-        if current_link['url']:         self.textbox_link_url.setText(current_link['url'])
+        if current_link['name']: self.textbox_link_name.setText(current_link['name'])
+        if current_link['type']:
+            index = self.comboBox_link_types.findData(current_link['type'])
+            self.comboBox_link_types.setCurrentIndex(index)
+        if current_link['url']: self.textbox_link_url.setText(current_link['url'])
         if current_link['description']: self.textbox_link_description.setText(current_link['description'])
-        if current_link['format']:      self.textbox_link_format.setText(current_link['format'])
-        index = self.comboBox_link_mimes.findData(current_link['mime'])
-        if current_link['mime']:        self.comboBox_link_mimes.setCurrentIndex(index)
-        if current_link['size']:        self.lineEdit_link_size.setText(str(current_link['size']))
+        if current_link['format']: self.textbox_link_format.setText(current_link['format'])
+        if current_link['mime']: 
+            index = self.comboBox_link_mimes.findData(current_link['mime'])
+            self.comboBox_link_mimes.setCurrentIndex(index)
+        if current_link['size']: self.lineEdit_link_size.setText(str(current_link['size']))
+
+    def dlg_accept(self):
+        """OK-Button bestätigt+schließt nur, wenn aktueller Link gespeichert werden konnte."""
+        #QMessageBox.warning(self, 'gedrückt', 'OK gedrückd')
+        saved = self.save_link(self.current_link_id)
+        if saved:
+            #QMessageBox.warning(self, 'gedrückt2', 'nach OK gedrückt')
+            self.accept()
 
     def prepare_editor(self, datasource_uri, connection):
         self.table = datasource_uri.table()
@@ -282,19 +338,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         # get foreign key for links-table #FIXME Nicht nur für Links! Mit dataset_id am Schluss auch zielgerichtet Medatatensatz akutalisieren
         self.dataset_id = data[0][9]
         
-        self.textbox_title.setPlainText(data[0][0])
-        self.textbox_abstract.setPlainText(data[0][1])
-        self.textbox_project_number.setPlainText(data[0][2])
-        self.textbox_keywords.setPlainText(str(data[0][4]))
-        if data[0][6]:
-            self.lineEdit_minimum_optimal_scale.setText(str(data[0][6]))
-        else: self.lineEdit_minimum_optimal_scale.clear()
-        if data[0][7]:
-            self.lineEdit_maximum_optimal_scale.setText(str(data[0][7]))
-        else: self.lineEdit_maximum_optimal_scale.clear()
-        if data[0][10]:
-            self.textbox_spatial_level.setPlainText(data[0][10])
-        else: self.textbox_spatial_level.clear()
+        if data[0][0]: self.textbox_title.setPlainText(data[0][0])
+        if data[0][1]: self.textbox_abstract.setPlainText(data[0][1])
+        if data[0][2]: self.textbox_project_number.setPlainText(data[0][2])
+        if data[0][4]: self.textbox_keywords.setPlainText(str(data[0][4]))
+        if data[0][6]: self.lineEdit_minimum_optimal_scale.setText(str(data[0][6]))
+        if data[0][7]: self.lineEdit_maximum_optimal_scale.setText(str(data[0][7]))
+        if data[0][10]: self.textbox_spatial_level.setPlainText(data[0][10])
         
         # get categories and fill comboBox
         self.comboBox_categories.clear()
@@ -345,7 +395,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.comboBox_linknames.setCurrentIndex(0)
             LOGGER.debug(f'open_editor(): {self.current_link_id=}')
             self.links_tab_update_form()
-
+        
     def open_editor(self, datasource_uri, connection):
         self.prepare_editor(datasource_uri, connection)
         self.show()
