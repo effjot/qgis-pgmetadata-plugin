@@ -21,7 +21,7 @@ from qgis.PyQt.QtGui import QIntValidator
 
 LINK_TYPE_PRESETS = OrderedDict([
     ('Webseite', {'type': 'WWW:LINK', 'mime': 'html'}),
-    ('Download', {'type': 'download', 'mime': 'html'}),
+    ('Download', {'type': 'download', 'mime': 'octet-stream'}),
     ('Information', {'type': 'information', 'mime': 'html'}),
     ('WMS-Dienst', {'type': 'OGC:WMS', 'mime': 'txml'}),
     ('WMTS-Dienst', {'type': 'OGC:WMTS', 'mime': 'txml'}),
@@ -30,9 +30,9 @@ LINK_TYPE_PRESETS = OrderedDict([
     ('CSV-Datei', {'type': 'file', 'mime': 'csv'}),
     ('Excel-Datei (.xlsx)', {'type': 'file', 'mime': 'xlsx'}),
     ('Word-Datei (.docx)', {'type': 'file', 'mime': 'docx'}),
-    ('PDF-Datei,', {'type': 'file', 'mime': 'pdf'}),
+    ('PDF-Datei', {'type': 'file', 'mime': 'pdf'}),
     ('Shapefile', {'type': 'ESRI:SHP', 'mime': 'octet-stream'}),
-    ('Geopackage', {'type': 'OGC:GPKG', 'mime': 'octet-stream'}),    
+    ('Geopackage', {'type': 'OGC:GPKG', 'mime': 'octet-stream'}),
     ('Ordner', {'type': 'directory', 'mime': 'directory'})
     ])
 
@@ -217,6 +217,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.btn_link_add.clicked.connect(self.new_link)
         self.btn_link_remove.setIcon(QgsApplication.getThemeIcon('/symbologyRemove.svg'))
         self.btn_link_remove.clicked.connect(self.remove_link)
+        self.cmb_link_type_preset.activated.connect(self.link_type_preset_selected)
+        self.cmb_link_type.activated.connect(self.link_type_preset_reset)
+        self.cmb_link_mime.activated.connect(self.link_type_preset_reset)
+        # When OK is clicked, check+save current link before closing
         self.buttonBox.accepted.disconnect()
         self.buttonBox.accepted.connect(self.dlg_accept)  
 
@@ -226,16 +230,30 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.links = Links()
         self.current_link_id: int
 
-    def clear_linkinfo(self, reset_index: bool):
+    def tab_links_clear_form(self):
         #FIXME: reset_index nötig? Umbenennen in tab_links_clear_form()
         self.txt_link_name.clear()
         self.txt_link_url.clear()
         self.txt_link_description.clear()
         self.txt_link_format.clear()
         self.lne_link_size.clear()
-        if reset_index:
-            self.cmb_link_type.setCurrentIndex(-1)
-            self.cmb_link_mime.setCurrentIndex(-1)
+        self.cmb_link_type_preset.setCurrentIndex(-1)
+        self.cmb_link_type.setCurrentIndex(-1)
+        self.cmb_link_mime.setCurrentIndex(-1)
+            
+    def link_type_preset_selected(self):
+        if self.cmb_link_type_preset.currentIndex() < 0:
+            QMessageBox.warning(self, 'Preset', 'nichts zu tun')
+            return
+        preset = self.cmb_link_type_preset.currentText()
+        type_code = LINK_TYPE_PRESETS[preset]['type']
+        mime_code = LINK_TYPE_PRESETS[preset]['mime']
+        #QMessageBox.warning(self, 'Preset', f"{preset=} | {type_code=} | {mime_code=}")
+        self.cmb_link_type.setCurrentIndex(self.cmb_link_type.findData(type_code))
+        self.cmb_link_mime.setCurrentIndex(self.cmb_link_mime.findData(mime_code))
+        
+    def link_type_preset_reset(self):
+        self.cmb_link_type_preset.setCurrentIndex(-1)
 
     def new_link(self):
         if self.links.count() > 0:
@@ -315,21 +333,23 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             saved = self.save_link(self.current_link_id)
             if not saved:
                 return
-        self.clear_linkinfo(True)
+        self.tab_links_clear_form()
         # get ID of currently selected link
         self.current_link_id = self.cmb_link_select.currentData()
         LOGGER.debug(f'  neu {self.cmb_link_select.currentIndex()=}; {self.current_link_id=}')
         current_link = self.links.get(self.current_link_id)
         if current_link['name']: self.txt_link_name.setText(current_link['name'])
         if current_link['type']:
-            index = self.cmb_link_type.findData(current_link['type'])
-            self.cmb_link_type.setCurrentIndex(index)
+            idx = self.cmb_link_type.findData(current_link['type'])
+            LOGGER.debug(f'  link type {current_link["type"]}: idx = {idx}')
+            self.cmb_link_type.setCurrentIndex(idx)
         if current_link['url']: self.txt_link_url.setText(current_link['url'])
         if current_link['description']: self.txt_link_description.setText(current_link['description'])
         if current_link['format']: self.txt_link_format.setText(current_link['format'])
         if current_link['mime']: 
-            index = self.cmb_link_mime.findData(current_link['mime'])
-            self.cmb_link_mime.setCurrentIndex(index)
+            idx = self.cmb_link_mime.findData(current_link['mime'])
+            LOGGER.debug(f'  link mime {current_link["mime"]}: idx = {idx}')
+            self.cmb_link_mime.setCurrentIndex(idx)
         if current_link['size']: self.lne_link_size.setText(str(current_link['size']))
 
     def dlg_accept(self):
@@ -407,12 +427,11 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get links and fill comboBox
         self.cmb_link_select.clear()
-        self.clear_linkinfo(False)
+        self.tab_links_clear_form()
         self.links.read_from_db(connection, self.dataset_id)
         self.current_link_id = None  # heißt: gibt noch keinen Link, der angezeigt werden kann
         if self.links.count():
             for link in self.links.get_all():
-                #LOGGER.debug(f'  add item {link=}')
                 self.cmb_link_select.addItem(link['name'], link['id'])
             self.cmb_link_select.setCurrentIndex(0)
             LOGGER.debug(f'open_editor(): {self.current_link_id=}')
