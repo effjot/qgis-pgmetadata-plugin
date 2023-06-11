@@ -188,32 +188,27 @@ class Links:
         elif link['status'] == 'new':
             self.delete(link_id)
 
-class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
+class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
     def __init__(self, parent=None):
         super().__init__()
         self.setupUi(self)
-        validator = QIntValidator(1, 100000000, self)
+        validator = QIntValidator(1, 100_000_000, self)
         self.lineEdit_minimum_optimal_scale.setValidator(validator)
         self.lineEdit_maximum_optimal_scale.setValidator(validator)
         self.lineEdit_link_size.setValidator(validator)
-        self.comboBox_linknames.currentIndexChanged.connect(self.links_tab_update_form)
-        self.tabWidget.currentChanged.connect(self.links_tab_update_form)
+        self.tabWidget.currentChanged.connect(self.tab_current_changed)
+        self.comboBox_linknames.currentIndexChanged.connect(self.tab_links_update_form)
         self.button_add_link.clicked.connect(self.new_link)
         self.button_remove_link.clicked.connect(self.remove_link)
         self.buttonBox.accepted.disconnect()
-        self.buttonBox.accepted.connect(self.dlg_accept)
-        #self.accepted.connect(self.dlg_accept)        
-        
-        self.current_tab_idx: int
-        self.prev_tab_idx: int
-        self.current_link_id: int
-    
-        self.current_tab_idx = self.tabWidget.currentIndex()
-        self.link_tab_idx = self.tabWidget.indexOf(self.tab_links)
-        QMessageBox.warning(self, 'Links tab', str(self.link_tab_idx))
+        self.buttonBox.accepted.connect(self.dlg_accept)  
+
+        self.tab_current_idx: int = self.tabWidget.currentIndex()
+        self.tab_links_idx: int = self.tabWidget.indexOf(self.tab_links)
         
         self.links = Links()
+        self.current_link_id: int
 
     def clear_linkinfo(self, reset_index: bool):
         self.textbox_link_name.clear()
@@ -237,7 +232,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
     def remove_link(self):        
         idx = self.comboBox_linknames.currentIndex()
-        LOGGER.debug(f'  remove_link() before: {idx=}, {self.current_link_id=}')
+        LOGGER.debug(f'remove_link() before: {idx=}, {self.current_link_id=}')
         self.links.mark_delete(self.current_link_id)
         self.current_link_id = None
         self.comboBox_linknames.removeItem(idx)
@@ -261,6 +256,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         if not (dlg_name and dlg_url):  # minimally required information missing
             self.comboBox_linknames.setCurrentIndex(savelink_combobox_idx)
+            self.tabWidget.setCurrentIndex(self.tab_links_idx)
             QMessageBox.warning(self, 'Unvollständige Links',
                                 'In diesem Link fehlen Name oder URL. Bitte ergänzen.')
             return False
@@ -281,15 +277,19 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             })
         return True
 
-    def links_tab_update_form(self):
-        prev_tab_idx = self.current_tab_idx
-        self.current_tab_idx = self.tabWidget.currentIndex()
-        if prev_tab_idx != self.link_tab_idx:
-            return
-        LOGGER.debug('links_tab_update_form()')
-        if self.tabWidget.tabText(self.tabWidget.currentIndex()) != 'Links':
+    def tab_current_changed(self):
+        LOGGER.debug('tab_current_changed()')
+        prev_tab_idx = self.tab_current_idx
+        self.tab_current_idx = self.tabWidget.currentIndex()
+        if prev_tab_idx == self.tab_links_idx:  # Changed from the Links tab to another → save currently edited link
+            self.save_link(self.current_link_id)
+        elif self.tab_current_idx == self.tab_links_idx:
+            self.tab_links_update_form()
+        else:
             LOGGER.debug('  nicht im Tab -> fertig')
-            return
+        
+    def tab_links_update_form(self):
+        LOGGER.debug('tab_links_update_form()')
         if self.current_link_id == self.comboBox_linknames.currentData():
             LOGGER.debug('  kein neuer Link gewählt -> fertig')
             return
@@ -368,8 +368,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                     selected_themes_values.append(theme['label'])
         self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
         
-        self.clear_linkinfo(False)
-        
         # get link types and fill comboBox
         self.comboBox_link_types.clear()
         link_types = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.type' ORDER BY item_order, code")
@@ -386,6 +384,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         # get links and fill comboBox
         self.comboBox_linknames.clear()
+        self.clear_linkinfo(False)
         self.links.read_from_db(connection, self.dataset_id)
         self.current_link_id = None  # heißt: gibt noch keinen Link, der angezeigt werden kann
         if self.links.count():
@@ -394,7 +393,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                 self.comboBox_linknames.addItem(link['name'], link['id'])
             self.comboBox_linknames.setCurrentIndex(0)
             LOGGER.debug(f'open_editor(): {self.current_link_id=}')
-            self.links_tab_update_form()
+        self.tab_links_update_form()
         
     def open_editor(self, datasource_uri, connection):
         self.prepare_editor(datasource_uri, connection)
