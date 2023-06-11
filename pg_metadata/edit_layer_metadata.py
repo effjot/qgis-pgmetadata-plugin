@@ -7,12 +7,18 @@ Created on Thu Sep  8 14:16:32 2022
 
 import logging
 from collections import OrderedDict, defaultdict
-from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt.QtWidgets import (
+    QDialog,
+    QInputDialog
+)
 from qgis.core import (
     QgsApplication,
     QgsProviderConnectionException
 )
-from PyQt5.QtCore import QVariant
+from PyQt5.QtCore import (
+    Qt,
+    QVariant
+)
 from PyQt5.QtWidgets import (
     QMessageBox,
     QTableWidgetItem,
@@ -184,6 +190,7 @@ class Links:
                 connection.executeSql(sql)
             except QgsProviderConnectionException as e:
                 LOGGER.critical(tr('Error when updating the database: ') + str(e))
+                return False
         return True
 
     def new(self):
@@ -239,12 +246,23 @@ class AvailableContacts:
             return None
         return self.contacts[contact_id]
     
-    def get_all(self):
-        return self.contacts.values()
+    def flatten(self, contacts, include_org=True):
+        return {contact_id:
+                "{name}{openbr}{orgname}{sep}{orgunit}{closebr}".format(
+                    name=contact['name'],
+                    openbr=' (' if include_org and contact['organisation_name'] else '',
+                    orgname=contact['organisation_name'] if include_org and contact['organisation_name'] else '',
+                    sep=', ' if include_org and contact['organisation_unit'] else '',
+                    orgunit=contact['organisation_unit'] if include_org and contact['organisation_unit'] else '',
+                    closebr=')' if include_org and contact['organisation_name'] else '')
+                for contact_id, contact in contacts.items()}
     
-    def get_organisation(self, org_name: str):
+    def get_all_flat(self):
+        return self.flatten(self.contacts)
+    
+    def get_organisation_flat(self, org_name: str):
         if org_name in self.organisation_members:
-            return self.organisation_members[org_name]
+            return self.flatten(self.organisation_members[org_name], include_org=False)
         else:
             return None
 
@@ -252,7 +270,8 @@ class AvailableContacts:
 class AssignedContacts:
     def __init__(self):
         self.assignments = OrderedDict()
-    
+        self.next_new_id: int = -1
+
     def clear(self):
         self.assignments.clear()
 
@@ -266,9 +285,66 @@ class AssignedContacts:
             connection, 'id', ['contact_role', 'fk_id_contact', 'fk_id_dataset'],
             f"FROM pgmetadata.dataset_contact WHERE fk_id_dataset = {dataset_id} ORDER by {sort_key}")
 
+    def get(self, assignment_id: int):
+        if assignment_id not in self.assignments:
+            return None
+        return self.assignments[assignment_id]
+
     def get_all(self):
         return self.assignments.values()
 
+    def new(self):
+        """Create new contact assignment with empty data and mark for database insert"""
+        new_id = self.next_new_id
+        self.assignments[new_id] = defaultdict(lambda: None,
+                                               {'id': new_id, 'contact_role': None, 
+                                                'fk_id_contact': None, 'status': 'new'})
+        self.next_new_id -= 1
+        LOGGER.debug(f'  AssignedContacts.new() -> {new_id=}; {self.next_new_id}')
+        return new_id
+
+    def delete(self, assignment_id: int):
+        if assignment_id not in self.assignments:
+            return
+        del self.assignments[assignment_id]
+        
+    def mark_delete(self, assignment_id):
+        """Mark current link for removal from metadata in database"""
+        ass = self.assignments.get(assignment_id)
+        LOGGER.debug(f'  mark_delete(): {assignment_id=}, {ass=}')
+        if 'status' not in ass or ass['status'] == 'update':
+            ass['status'] = 'remove'
+        elif ass['status'] == 'new':
+            self.delete(assignment_id)
+
+    def write_to_db(self, connection, dataset_id):
+        if not self.assignments:
+            return True
+        for ass in self.get_all():
+            LOGGER.debug(f"AssignedContacts.write_to_db(): {ass=}")
+            if 'status' not in ass.keys():
+                continue
+            if ass['status'] == 'update':
+                sql = f"UPDATE pgmetadata.dataset_contact SET fk_id_contact = {ass['fk_id_contact']}, "
+                sql += f"contact_role = $quote${ass['contact_role']}$quote$ WHERE id = {ass['id']}"
+                LOGGER.debug(f"  AssignedContacts.write_to_db(): update {ass['id']} {ass['contact_role']}")
+                LOGGER.debug('sql=')
+                LOGGER.debug(sql)
+            if ass['status'] == 'new':
+                sql = "INSERT INTO pgmetadata.dataset_contact (fk_id_dataset, fk_id_contact, contact_role) "
+                sql += f"VALUES ({dataset_id}, {ass['fk_id_contact']}, $quote${ass['contact_role']}$quote$)"
+                LOGGER.debug(f"  AssignedContacts.write_to_db(): insert {ass['id']} {ass['contact_role']}")
+                LOGGER.debug('sql=')
+                LOGGER.debug(sql)
+            if ass['status'] == 'remove':
+                sql = f"DELETE FROM pgmetadata.dataset_contact WHERE id = {ass['id']}"
+                LOGGER.debug(f"  AssignedContacts.write_to_db(): delete {ass['id']} {ass['contact_role']}")
+            try:
+                connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when updating the database: ') + str(e))
+                return False
+        return True
 
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
     def __init__(self, parent=None):
@@ -287,6 +363,12 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.cmb_link_type_preset.activated.connect(self.link_type_preset_selected)
         self.cmb_link_type.activated.connect(self.link_type_preset_reset)
         self.cmb_link_mime.activated.connect(self.link_type_preset_reset)
+        self.btn_contact_add.setIcon(QgsApplication.getThemeIcon('/symbologyAdd.svg'))
+        self.btn_contact_add.clicked.connect(self.add_contact)
+        self.btn_contact_remove.setIcon(QgsApplication.getThemeIcon('/symbologyRemove.svg'))
+        self.btn_contact_remove.clicked.connect(self.remove_contact)
+        self.btn_creator_add.setIcon(QgsApplication.getThemeIcon('/symbologyAdd.svg'))
+        self.btn_creator_add.clicked.connect(self.add_creator)
         # When OK is clicked, check+save current link before closing
         self.buttonBox.accepted.disconnect()
         self.buttonBox.accepted.connect(self.dlg_accept)  
@@ -381,7 +463,74 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             'size': self.lne_link_size.text()
             })
         return True
+    
+    def assignment_set_row(self, row: int, assignment):
+        contact = self.available_contacts.get(assignment['fk_id_contact'])
+        role = QTableWidgetItem(self.roles[assignment['contact_role']])
+        name = QTableWidgetItem(contact.get('name', ''))
+        org_name = QTableWidgetItem(contact.get('organisation_name', ''))
+        org_unit = QTableWidgetItem(contact.get('organisation_unit', ''))
+        email = QTableWidgetItem(contact.get('email', ''))
+        phone = QTableWidgetItem(contact.get('phone', ''))
+        ass_id = QTableWidgetItem(str(assignment['id']))
+        self.table_contacts.setItem(row, 0, role)
+        self.table_contacts.setItem(row, 1, name)
+        self.table_contacts.setItem(row, 2, org_name)
+        self.table_contacts.setItem(row, 3, org_unit)
+        self.table_contacts.setItem(row, 4, email)
+        self.table_contacts.setItem(row, 5, phone)
+        self.table_contacts.setItem(row, 6, ass_id)
 
+    def add_contact(self, filter_by_org: str=None, role_code: str=None):
+        if filter_by_org:
+            contacts = self.available_contacts.get_organisation_flat(filter_by_org)
+        else:
+            contacts = self.available_contacts.get_all_flat()
+        if not role_code:
+            dlg = QInputDialog()
+            dlg.setComboBoxItems(self.roles.values())  #FIXME: can’t add Data to combobox with QInputDialog -> make custom dialog
+            dlg.setWindowTitle(tr("Neuen Kontakt hinzufügen"))
+            dlg.setLabelText(tr("Rolle/Aufgabe auswählen"))
+            if not dlg.exec_():
+                return 
+            role_text = dlg.textValue()
+            role_code = dict_reverse_lookup(self.roles, [role_text])[0]
+        dlg = QInputDialog()
+        dlg.setComboBoxItems(contacts.values())  #FIXME: can’t add Data to combobox with QInputDialog -> make custom dialog
+        dlg.setWindowTitle(tr("Neuen Kontakt hinzufügen"))
+        dlg.setLabelText(tr(f"Kontakt für Rolle „{role_text}“ auswählen"))
+        if not dlg.exec_():
+            return 
+        selected = dlg.textValue()
+        contact_id = dict_reverse_lookup(contacts, [selected])[0]
+        new_id = self.assigned_contacts.new()
+        new_ass = self.assigned_contacts.get(new_id)
+        new_ass['contact_role'] = role_code
+        new_ass['fk_id_contact'] = contact_id
+        row = self.table_contacts.rowCount()
+        self.table_contacts.insertRow(row)
+        self.assignment_set_row(row, new_ass)
+        
+    def remove_contact(self):
+        #LOGGER.debug("remove_contact():")
+        row = self.table_contacts.currentRow()
+        ass_id = int(self.table_contacts.item(row, 6).data(Qt.DisplayRole))
+        #LOGGER.debug(f"  {row=}, {ass_id=}")
+        if ass_id == 0:
+            return
+        self.assigned_contacts.mark_delete(ass_id)
+        self.table_contacts.removeRow(row)
+
+    def add_creator(self):
+        contact_id = self.cmb_creator.currentData()
+        new_id = self.assigned_contacts.new()
+        new_ass = self.assigned_contacts.get(new_id)
+        new_ass['contact_role'] = 'OR'
+        new_ass['fk_id_contact'] = contact_id
+        row = self.table_contacts.rowCount()
+        self.table_contacts.insertRow(row)
+        self.assignment_set_row(row, new_ass)
+        
     def tab_current_changed(self):
         LOGGER.debug('tab_current_changed()')
         prev_tab_idx = self.tab_current_idx
@@ -513,32 +662,24 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.debug(f'open_editor(): {self.current_link_id=}')
         self.tab_links_update_form()
         
-        # set up contacts form
+        # set up contacts tab and creator quick add form
         self.available_contacts.read_from_db(connection)
         self.roles = get_glossary(connection, 'contact.contact_role')
         self.assigned_contacts.read_from_db(connection, self.dataset_id)
         self.table_contacts.setRowCount(self.assigned_contacts.count())
         for row, assignment in enumerate(self.assigned_contacts.get_all()):
-            contact = self.available_contacts.get(assignment['fk_id_contact'])
-            role = QTableWidgetItem(self.roles[assignment['contact_role']])
-            name = QTableWidgetItem(contact.get('name', ''))
-            org_name = QTableWidgetItem(contact.get('organisation_name', ''))
-            org_unit = QTableWidgetItem(contact.get('organisation_unit', ''))
-            email = QTableWidgetItem(contact.get('email', ''))
-            phone = QTableWidgetItem(contact.get('phone', ''))
-            self.table_contacts.setItem(row, 0, role)
-            self.table_contacts.setItem(row, 1, name)
-            self.table_contacts.setItem(row, 2, org_name)
-            self.table_contacts.setItem(row, 3, org_unit)
-            self.table_contacts.setItem(row, 4, email)
-            self.table_contacts.setItem(row, 5, phone)
-        self.table_contacts.horizontalHeader().setVisible(True)
-        self.table_contacts.resizeColumnsToContents()
+            self.assignment_set_row(row, assignment)
         hdr = self.table_contacts.horizontalHeader()
-        for col in range(self.table_contacts.columnCount()):
+        hdr.setVisible(True)
+        hdr.hideSection(6)  # assigned_contact_id only for internal use
+        self.table_contacts.resizeColumnsToContents()    
+        for col in range(self.table_contacts.columnCount() - 1):
             hdr.setSectionResizeMode(col, QHeaderView.Interactive)
             if hdr.sectionSize(col) > 180:
                 hdr.resizeSection(col, 180)
+        for contact_id, contact in self.available_contacts.get_organisation_flat('GCI GmbH').items():
+            self.cmb_creator.addItem(contact, contact_id)
+        self.cmb_creator.setCurrentIndex(-1)
         
     def open_editor(self, datasource_uri, connection):
         self.prepare_editor(datasource_uri, connection)
@@ -562,9 +703,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if not maximum_optimal_scale:
             maximum_optimal_scale = 'NULL'
         
-        # Store edited links in database
         self.save_link(self.current_link_id)
         self.links.write_to_db(connection, self.dataset_id)
+        
+        self.assigned_contacts.write_to_db(connection, self.dataset_id)
         
         new_categories_keys = dict_reverse_lookup(self.categories, self.cmb_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)

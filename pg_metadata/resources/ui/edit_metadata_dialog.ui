@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>638</width>
+    <width>633</width>
     <height>431</height>
    </rect>
   </property>
@@ -39,7 +39,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>4</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="important_metadata">
     <attribute name="title">
@@ -50,8 +50,8 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>491</width>
-       <height>271</height>
+       <width>581</width>
+       <height>321</height>
       </rect>
      </property>
      <property name="title">
@@ -65,8 +65,8 @@
        <rect>
         <x>130</x>
         <y>190</y>
-        <width>351</width>
-        <height>27</height>
+        <width>440</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="tabChangesFocus">
@@ -104,8 +104,8 @@
        <rect>
         <x>130</x>
         <y>10</y>
-        <width>350</width>
-        <height>27</height>
+        <width>440</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="horizontalScrollBarPolicy">
@@ -119,9 +119,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>230</y>
+        <y>225</y>
         <width>121</width>
-        <height>16</height>
+        <height>30</height>
        </rect>
       </property>
       <property name="text">
@@ -162,8 +162,8 @@
        <rect>
         <x>130</x>
         <y>120</y>
-        <width>350</width>
-        <height>27</height>
+        <width>440</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="defaultText">
@@ -175,8 +175,8 @@
        <rect>
         <x>130</x>
         <y>225</y>
-        <width>351</width>
-        <height>27</height>
+        <width>440</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="horizontalScrollBarPolicy">
@@ -207,8 +207,8 @@
        <rect>
         <x>130</x>
         <y>50</y>
-        <width>350</width>
-        <height>61</height>
+        <width>440</width>
+        <height>65</height>
        </rect>
       </property>
       <property name="horizontalScrollBarPolicy">
@@ -223,12 +223,56 @@
        <rect>
         <x>130</x>
         <y>155</y>
-        <width>350</width>
-        <height>27</height>
+        <width>440</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="defaultText">
        <string/>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_9">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>260</y>
+        <width>121</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>GCI-Ersteller</string>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="cmb_creator">
+      <property name="geometry">
+       <rect>
+        <x>130</x>
+        <y>260</y>
+        <width>411</width>
+        <height>30</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QToolButton" name="btn_creator_add">
+      <property name="geometry">
+       <rect>
+        <x>550</x>
+        <y>264</y>
+        <width>22</width>
+        <height>22</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>14</pointsize>
+       </font>
+      </property>
+      <property name="toolTip">
+       <string>neuen Link hinzufügen</string>
+      </property>
+      <property name="text">
+       <string>+</string>
       </property>
      </widget>
     </widget>
@@ -692,8 +736,8 @@ gängige Typen</string>
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>581</width>
-       <height>321</height>
+       <width>580</width>
+       <height>290</height>
       </rect>
      </property>
      <property name="sizeAdjustPolicy">
@@ -701,6 +745,9 @@ gängige Typen</string>
      </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
@@ -715,7 +762,7 @@ gängige Typen</string>
       <number>0</number>
      </property>
      <property name="columnCount">
-      <number>6</number>
+      <number>7</number>
      </property>
      <attribute name="horizontalHeaderVisible">
       <bool>false</bool>
@@ -756,6 +803,53 @@ gängige Typen</string>
        <string>Telefon</string>
       </property>
      </column>
+     <column>
+      <property name="text">
+       <string>id</string>
+      </property>
+     </column>
+    </widget>
+    <widget class="QToolButton" name="btn_contact_add">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>310</y>
+       <width>22</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string>neuen Link hinzufügen</string>
+     </property>
+     <property name="text">
+      <string>+</string>
+     </property>
+    </widget>
+    <widget class="QToolButton" name="btn_contact_remove">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>310</y>
+       <width>22</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>14</pointsize>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string>diesen Link entfernen</string>
+     </property>
+     <property name="text">
+      <string>−</string>
+     </property>
     </widget>
    </widget>
   </widget>
