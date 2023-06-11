@@ -27,6 +27,7 @@ LINK_TYPE_PRESETS = OrderedDict([
     ('WMTS-Dienst', {'type': 'OGC:WMTS', 'mime': 'txml'}),
     ('WFS-Dienst', {'type': 'OGC:WFS', 'mime': 'txml'}),
     ('Datei', {'type': 'file', 'mime': 'octet-stream'}),
+    ('Text-Datei (.txt)', {'type': 'file', 'mime': 'plain'}),
     ('CSV-Datei', {'type': 'file', 'mime': 'csv'}),
     ('Excel-Datei (.xlsx)', {'type': 'file', 'mime': 'xlsx'}),
     ('Word-Datei (.docx)', {'type': 'file', 'mime': 'docx'}),
@@ -34,7 +35,7 @@ LINK_TYPE_PRESETS = OrderedDict([
     ('Shapefile', {'type': 'ESRI:SHP', 'mime': 'octet-stream'}),
     ('Geopackage', {'type': 'OGC:GPKG', 'mime': 'octet-stream'}),
     ('Ordner', {'type': 'directory', 'mime': 'directory'})
-    ])
+])
 
 
 LOGGER = logging.getLogger('pg_metadata')
