@@ -133,6 +133,7 @@ class LocatorFilter(QgsLocatorFilter):
             uri.setKeyColumn(pk[0])
 
         if result.userData['geometry_type'] != 'RASTER':
+            # FIXME: why copied from above?
             geom_types = table.geometryColumnTypes()
             if geom_types:
                 # Take the first one

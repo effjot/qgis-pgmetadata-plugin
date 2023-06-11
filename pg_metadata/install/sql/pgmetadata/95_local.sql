@@ -7,6 +7,10 @@ INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (138, 'dataset.publication_frequency', 'FTN', 'Fortnightly', 'Update data every two weeks', 6, NULL, NULL, NULL, NULL, NULL, NULL, 'Zweiwöchentlich', 'Daten werden vierzehntägig aktualisiert') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (139, 'dataset.publication_frequency', 'CON', 'Continual', 'Data is repeatedly and frequently updated', 9, NULL, NULL, NULL, NULL, NULL, NULL, 'Kontinuierlich', 'Daten werden ständig aktualisiert') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (id, field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES (140, 'dataset.publication_frequency', 'UNK', 'Unknown', 'Frequency of maintenance for the data is not known', 12, NULL, NULL, NULL, NULL, NULL, NULL, 'Unbekannt', 'Ein Aktualisierungsintervall ist nicht bekannt') ON CONFLICT DO NOTHING;
+SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 140, true);
+-- continue without specifying id
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('dataset.publication_frequency', 'Y02', 'Every 2 years', 'Update data every two years', 25, NULL, NULL, NULL, NULL, NULL, NULL, 'Alle 2 Jahre', 'Daten werden alle zwei Jahre aktualisiert') ON CONFLICT DO NOTHING;
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('dataset.publication_frequency', 'Y04', 'Every 4 years', 'Update data every four years', 25, NULL, NULL, NULL, NULL, NULL, NULL, 'Alle 4 Jahre', 'Daten werden alle vier Jahre aktualisiert') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('dataset.publication_frequency', 'Y05', 'Every 5 years', 'Update data every five years', 25, NULL, NULL, NULL, NULL, NULL, NULL, 'Alle 5 Jahre', 'Daten werden alle fünf Jahre aktualisiert') ON CONFLICT DO NOTHING;
 INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('dataset.publication_frequency', 'Y06', 'Every 6 years', 'Update data every six years', 26, NULL, NULL, NULL, NULL, NULL, NULL, 'Alle 6 Jahre', 'Daten werden alle sechs Jahre aktualisiert') ON CONFLICT DO NOTHING;
 
@@ -17,9 +21,12 @@ INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_ord
 
 -- additional contact roles
 INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('contact.contact_role', 'WA', 'WMS/WFS Administrator', 'Person or party who can aid with WMS/WFS issues', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'WMS/WFS-Ansprechpartner', 'Person oder Stelle, die bei WMS/WFS-Problemen weiterhelfen kann') ON CONFLICT DO NOTHING;
-INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('contact.contact_role', 'GA', 'GIS Administrator', 'Person or party who can aid with GIS-related issues', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'WMS/WFS-Ansprechpartner', 'Person oder Stelle, die in allen GIS technischen Angelegenheiten weiterhelfen kann') ON CONFLICT DO NOTHING;
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('contact.contact_role', 'GA', 'GIS Administrator', 'Person or party who can aid with GIS-related issues', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'GIS-technischer Ansprechpartner', 'Person oder Stelle, die bei GIS-technischen Angelegenheiten weiterhelfen kann') ON CONFLICT DO NOTHING;
 
-SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 147, true);
+-- localisation for left-hand side of scale fractions
+INSERT INTO pgmetadata.glossary (field, code, label_en, description_en, item_order, label_fr, description_fr, label_it, description_it, label_es, description_es, label_de, description_de) VALUES ('display_settings', 'scale_fraction', '1 : ', NULL, NULL, '1/', NULL, NULL, NULL, NULL, NULL, '1 : ', NULL) ON CONFLICT DO NOTHING;
+
+SELECT pg_catalog.setval('pgmetadata.glossary_id_seq', 150, true);
 
 
 -- new item_order for existing publication frequencies
@@ -106,8 +113,8 @@ CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
             gtheme.label AS theme,
             s.keywords,
             s.spatial_level,
-            ('1 : '::text || s.minimum_optimal_scale) AS minimum_optimal_scale,
-            ('1 : '::text || s.maximum_optimal_scale) AS maximum_optimal_scale,
+            (((((glossary.dict -> 'display_settings'::text) -> 'scale_fraction'::text) -> 'label'::text) ->> glossary.locale) || s.minimum_optimal_scale) AS minimum_optimal_scale,
+            (((((glossary.dict -> 'display_settings'::text) -> 'scale_fraction'::text) -> 'label'::text) ->> glossary.locale) || s.maximum_optimal_scale) AS maximum_optimal_scale,
             s.publication_date,
             ((((glossary.dict -> 'dataset.publication_frequency'::text) -> s.publication_frequency) -> 'label'::text) ->> glossary.locale) AS publication_frequency,
             ((((glossary.dict -> 'dataset.license'::text) -> s.license) -> 'label'::text) ->> glossary.locale) AS license,

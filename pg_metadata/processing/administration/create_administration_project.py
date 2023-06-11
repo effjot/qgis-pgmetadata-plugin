@@ -24,7 +24,7 @@ from pg_metadata.qgis_plugin_tools.tools.resources import resources_path
 SCHEMA = 'pgmetadata'
 
 LANG_CODES = ['en', 'fr', 'de', 'it', 'es']
-LANGUAGES = [tr('English'), tr('French'), tr('German'), tr('Italian'), tr('Spanish')]
+LANGUAGES = []  # will be set in initAlgorithm(), because tr() doesn’t seem to work here
 # TODO: sorting? Currently, alphabetically by English name
 
 
@@ -35,7 +35,7 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
 
     OUTPUT_STATUS = 'OUTPUT_STATUS'
     OUTPUT_STRING = 'OUTPUT_STRING'
-
+    
     def name(self):
         return 'create_administration_project'
 
@@ -60,6 +60,8 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         return short_help
 
     def initAlgorithm(self, config):
+        LANGUAGES = [tr('English'), tr('French'), tr('German'), tr('Italian'), tr('Spanish')]
+        
         connections, _ = connections_list()
         if connections:
             connection_name = connections[0]
@@ -84,8 +86,7 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
             optional=False,
             fileFilter='QGS project (*.qgs)',
         )
-        param.setHelp(tr("The destination file where to create the QGIS project.").format(SCHEMA))
-        # FIXME: is the .format(SCHEMA) necessary?
+        param.setHelp(tr("The destination file where to create the QGIS project."))
         self.addParameter(param)
 
         # target project language, selection defaults to user’s locale if available
@@ -103,7 +104,6 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         self.addParameter(param)
 
     def checkParameterValues(self, parameters, context):
-
         # Check if the target project file ends with qgs
         project_file = self.parameterAsString(parameters, self.PROJECT_FILE, context)
         if not project_file.endswith('.qgs'):
@@ -112,7 +112,6 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
         return super().checkParameterValues(parameters, context)
 
     def processAlgorithm(self, parameters, context, feedback):
-
         connection_name = self.parameterAsConnectionName(parameters, self.CONNECTION_NAME, context)
 
         # Write the file out again
@@ -138,10 +137,10 @@ class CreateAdministrationProject(BaseProcessingAlgorithm):
             translation_src = template_file.replace('.qgs', f'_{lang}.qm')
             translation_dst = project_file.replace('.qgs', f'_{lang}.qm')
             if lang and os.path.isfile(translation_src):
-                feedback.pushInfo(tr(f'Providing translation file for language “{lang}”'))
+                feedback.pushInfo(tr('Providing translation file for language “{lang}”').format(lang=lang))
                 shutil.copyfile(translation_src, translation_dst)
             else:
-                feedback.pushInfo(tr(f'No translation available for language “{lang}”'))
+                feedback.pushInfo(tr('No translation available for language “{lang}”').format(lang=lang))
                 lang = ''  # indicate missing translation in algorithm result
 
         add_connection(connection_name)
