@@ -9,7 +9,10 @@ import logging
 from dataclasses import dataclass
 from collections import OrderedDict, defaultdict
 from qgis.PyQt.QtWidgets import QDialog
-from qgis.core import QgsProviderConnectionException
+from qgis.core import (
+    QgsApplication,
+    QgsProviderConnectionException
+)
 from PyQt5.QtWidgets import QMessageBox
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 from pg_metadata.qgis_plugin_tools.tools.resources import load_ui
@@ -199,8 +202,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lineEdit_link_size.setValidator(validator)
         self.tabWidget.currentChanged.connect(self.tab_current_changed)
         self.comboBox_linknames.currentIndexChanged.connect(self.tab_links_update_form)
-        self.button_add_link.clicked.connect(self.new_link)
-        self.button_remove_link.clicked.connect(self.remove_link)
+        self.btn_link_add.setIcon(QgsApplication.getThemeIcon('/symbologyAdd.svg'))
+        self.btn_link_add.clicked.connect(self.new_link)
+        self.btn_link_remove.setIcon(QgsApplication.getThemeIcon('/symbologyRemove.svg'))
+        self.btn_link_remove.clicked.connect(self.remove_link)
         self.buttonBox.accepted.disconnect()
         self.buttonBox.accepted.connect(self.dlg_accept)  
 

@@ -590,7 +590,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QToolButton" name="button_add_link">
+    <widget class="QToolButton" name="btn_link_add">
      <property name="geometry">
       <rect>
        <x>440</x>
@@ -604,11 +604,14 @@
        <pointsize>14</pointsize>
       </font>
      </property>
+     <property name="toolTip">
+      <string>neuen Link hinzufügen</string>
+     </property>
      <property name="text">
       <string>+</string>
      </property>
     </widget>
-    <widget class="QToolButton" name="button_remove_link">
+    <widget class="QToolButton" name="btn_link_remove">
      <property name="geometry">
       <rect>
        <x>468</x>
@@ -622,8 +625,11 @@
        <pointsize>14</pointsize>
       </font>
      </property>
+     <property name="toolTip">
+      <string>diesen Link entfernen</string>
+     </property>
      <property name="text">
-      <string>-</string>
+      <string>−</string>
      </property>
     </widget>
    </widget>
@@ -653,8 +659,8 @@
   <tabstop>lineEdit_minimum_optimal_scale</tabstop>
   <tabstop>lineEdit_maximum_optimal_scale</tabstop>
   <tabstop>comboBox_linknames</tabstop>
-  <tabstop>button_add_link</tabstop>
-  <tabstop>button_remove_link</tabstop>
+  <tabstop>btn_link_add</tabstop>
+  <tabstop>btn_link_remove</tabstop>
   <tabstop>textbox_link_name</tabstop>
   <tabstop>comboBox_link_types</tabstop>
   <tabstop>textbox_link_url</tabstop>
