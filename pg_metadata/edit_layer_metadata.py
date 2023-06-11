@@ -18,6 +18,25 @@ from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 from pg_metadata.qgis_plugin_tools.tools.resources import load_ui
 from qgis.PyQt.QtGui import QIntValidator
 
+
+LINK_TYPE_PRESETS = OrderedDict([
+    ('Webseite', {'type': 'WWW:LINK', 'mime': 'html'}),
+    ('Download', {'type': 'download', 'mime': 'html'}),
+    ('Information', {'type': 'information', 'mime': 'html'}),
+    ('WMS-Dienst', {'type': 'OGC:WMS', 'mime': 'txml'}),
+    ('WMTS-Dienst', {'type': 'OGC:WMTS', 'mime': 'txml'}),
+    ('WFS-Dienst', {'type': 'OGC:WFS', 'mime': 'txml'}),
+    ('Datei', {'type': 'file', 'mime': 'octet-stream'}),
+    ('CSV-Datei', {'type': 'file', 'mime': 'csv'}),
+    ('Excel-Datei (.xlsx)', {'type': 'file', 'mime': 'xlsx'}),
+    ('Word-Datei (.docx)', {'type': 'file', 'mime': 'docx'}),
+    ('PDF-Datei,', {'type': 'file', 'mime': 'pdf'}),
+    ('Shapefile', {'type': 'ESRI:SHP', 'mime': 'octet-stream'}),
+    ('Geopackage', {'type': 'OGC:GPKG', 'mime': 'octet-stream'}),    
+    ('Ordner', {'type': 'directory', 'mime': 'directory'})
+    ])
+
+
 LOGGER = logging.getLogger('pg_metadata')
 EDITDIALOG_CLASS = load_ui('edit_metadata_dialog.ui')
 
@@ -70,14 +89,6 @@ def query_to_ordereddict(connection, id_col: str, columns: list[str], from_where
     for t in terms:
         terms_by_id[t[id_col]] = t
     return terms_by_id
-
-
-# TODO: ggf. Klasse für einzelnen Link verwenden
-@dataclass
-class Link:
-    """Metadata link information"""
-    id: int
-    name: str
 
 
 class Links:
@@ -197,11 +208,11 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         super().__init__()
         self.setupUi(self)
         validator = QIntValidator(1, 100_000_000, self)
-        self.lineEdit_minimum_optimal_scale.setValidator(validator)
-        self.lineEdit_maximum_optimal_scale.setValidator(validator)
-        self.lineEdit_link_size.setValidator(validator)
+        self.lne_minimum_optimal_scale.setValidator(validator)
+        self.lne_maximum_optimal_scale.setValidator(validator)
+        self.lne_link_size.setValidator(validator)
         self.tabWidget.currentChanged.connect(self.tab_current_changed)
-        self.comboBox_linknames.currentIndexChanged.connect(self.tab_links_update_form)
+        self.cmb_link_select.currentIndexChanged.connect(self.tab_links_update_form)
         self.btn_link_add.setIcon(QgsApplication.getThemeIcon('/symbologyAdd.svg'))
         self.btn_link_add.clicked.connect(self.new_link)
         self.btn_link_remove.setIcon(QgsApplication.getThemeIcon('/symbologyRemove.svg'))
@@ -216,14 +227,15 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.current_link_id: int
 
     def clear_linkinfo(self, reset_index: bool):
-        self.textbox_link_name.clear()
-        self.textbox_link_url.clear()
-        self.textbox_link_description.clear()
-        self.textbox_link_format.clear()
-        self.lineEdit_link_size.clear()
+        #FIXME: reset_index nötig? Umbenennen in tab_links_clear_form()
+        self.txt_link_name.clear()
+        self.txt_link_url.clear()
+        self.txt_link_description.clear()
+        self.txt_link_format.clear()
+        self.lne_link_size.clear()
         if reset_index:
-            self.comboBox_link_types.setCurrentIndex(-1)
-            self.comboBox_link_mimes.setCurrentIndex(-1)
+            self.cmb_link_type.setCurrentIndex(-1)
+            self.cmb_link_mime.setCurrentIndex(-1)
 
     def new_link(self):
         if self.links.count() > 0:
@@ -231,17 +243,17 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             if not saved:
                 return False
         new_id = self.links.new()
-        self.comboBox_linknames.addItem('(Neuer Link)', new_id)
-        self.comboBox_linknames.setCurrentIndex(self.comboBox_linknames.findData(new_id))
+        self.cmb_link_select.addItem('(Neuer Link)', new_id)
+        self.cmb_link_select.setCurrentIndex(self.cmb_link_select.findData(new_id))
         self.current_link_id = new_id
 
     def remove_link(self):        
-        idx = self.comboBox_linknames.currentIndex()
+        idx = self.cmb_link_select.currentIndex()
         LOGGER.debug(f'remove_link() before: {idx=}, {self.current_link_id=}')
         self.links.mark_delete(self.current_link_id)
         self.current_link_id = None
-        self.comboBox_linknames.removeItem(idx)
-        LOGGER.debug(f'  remove_link() after: {self.comboBox_linknames.currentIndex()=}, {self.current_link_id=}')
+        self.cmb_link_select.removeItem(idx)
+        LOGGER.debug(f'  remove_link() after: {self.cmb_link_select.currentIndex()=}, {self.current_link_id=}')
         
     def save_link(self, link_id):
         """Link-Daten aus Dialog holen und merken.
@@ -255,12 +267,12 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if not link_id:
             return True
         link = self.links.get(link_id)
-        savelink_combobox_idx = self.comboBox_linknames.findData(link_id)
-        dlg_name = self.textbox_link_name.toPlainText()       
-        dlg_url = self.textbox_link_url.toPlainText()
+        savelink_combobox_idx = self.cmb_link_select.findData(link_id)
+        dlg_name = self.txt_link_name.toPlainText()       
+        dlg_url = self.txt_link_url.toPlainText()
         
         if not (dlg_name and dlg_url):  # minimally required information missing
-            self.comboBox_linknames.setCurrentIndex(savelink_combobox_idx)
+            self.cmb_link_select.setCurrentIndex(savelink_combobox_idx)
             self.tabWidget.setCurrentIndex(self.tab_links_idx)
             QMessageBox.warning(self, 'Unvollständige Links',
                                 'In diesem Link fehlen Name oder URL. Bitte ergänzen.')
@@ -268,17 +280,17 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             
         # Namen in Combobox aktualisieren (Sternchen für Änderungen)
         if link['name'] != dlg_name:            
-            LOGGER.debug(f'  ComboBox: {dlg_name=}, {self.comboBox_linknames.currentIndex()=}, {savelink_combobox_idx=}')
-            self.comboBox_linknames.setItemText(savelink_combobox_idx,
+            LOGGER.debug(f'  ComboBox: {dlg_name=}, {self.cmb_link_select.currentIndex()=}, {savelink_combobox_idx=}')
+            self.cmb_link_select.setItemText(savelink_combobox_idx,
                                                 '*' + dlg_name)       
         self.links.update(link_id, link_data={
             'name': dlg_name,
-            'type': self.comboBox_link_types.currentData(),
+            'type': self.cmb_link_type.currentData(),
             'url': dlg_url,
-            'description': self.textbox_link_description.toPlainText(),
-            'format': self.textbox_link_format.toPlainText(),
-            'mime': self.comboBox_link_mimes.currentData(),
-            'size': self.lineEdit_link_size.text()
+            'description': self.txt_link_description.toPlainText(),
+            'format': self.txt_link_format.toPlainText(),
+            'mime': self.cmb_link_mime.currentData(),
+            'size': self.lne_link_size.text()
             })
         return True
 
@@ -295,7 +307,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
     def tab_links_update_form(self):
         LOGGER.debug('tab_links_update_form()')
-        if self.current_link_id == self.comboBox_linknames.currentData():
+        if self.current_link_id == self.cmb_link_select.currentData():
             LOGGER.debug('  kein neuer Link gewählt -> fertig')
             return
         if self.current_link_id:
@@ -305,20 +317,20 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                 return
         self.clear_linkinfo(True)
         # get ID of currently selected link
-        self.current_link_id = self.comboBox_linknames.currentData()
-        LOGGER.debug(f'  neu {self.comboBox_linknames.currentIndex()=}; {self.current_link_id=}')
+        self.current_link_id = self.cmb_link_select.currentData()
+        LOGGER.debug(f'  neu {self.cmb_link_select.currentIndex()=}; {self.current_link_id=}')
         current_link = self.links.get(self.current_link_id)
-        if current_link['name']: self.textbox_link_name.setText(current_link['name'])
+        if current_link['name']: self.txt_link_name.setText(current_link['name'])
         if current_link['type']:
-            index = self.comboBox_link_types.findData(current_link['type'])
-            self.comboBox_link_types.setCurrentIndex(index)
-        if current_link['url']: self.textbox_link_url.setText(current_link['url'])
-        if current_link['description']: self.textbox_link_description.setText(current_link['description'])
-        if current_link['format']: self.textbox_link_format.setText(current_link['format'])
+            index = self.cmb_link_type.findData(current_link['type'])
+            self.cmb_link_type.setCurrentIndex(index)
+        if current_link['url']: self.txt_link_url.setText(current_link['url'])
+        if current_link['description']: self.txt_link_description.setText(current_link['description'])
+        if current_link['format']: self.txt_link_format.setText(current_link['format'])
         if current_link['mime']: 
-            index = self.comboBox_link_mimes.findData(current_link['mime'])
-            self.comboBox_link_mimes.setCurrentIndex(index)
-        if current_link['size']: self.lineEdit_link_size.setText(str(current_link['size']))
+            index = self.cmb_link_mime.findData(current_link['mime'])
+            self.cmb_link_mime.setCurrentIndex(index)
+        if current_link['size']: self.lne_link_size.setText(str(current_link['size']))
 
     def dlg_accept(self):
         """OK-Button bestätigt+schließt nur, wenn aktueller Link gespeichert werden konnte."""
@@ -343,60 +355,66 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         # get foreign key for links-table #FIXME Nicht nur für Links! Mit dataset_id am Schluss auch zielgerichtet Medatatensatz akutalisieren
         self.dataset_id = data[0][9]
         
-        if data[0][0]: self.textbox_title.setPlainText(data[0][0])
-        if data[0][1]: self.textbox_abstract.setPlainText(data[0][1])
-        if data[0][2]: self.textbox_project_number.setPlainText(data[0][2])
-        if data[0][4]: self.textbox_keywords.setPlainText(str(data[0][4]))
-        if data[0][6]: self.lineEdit_minimum_optimal_scale.setText(str(data[0][6]))
-        if data[0][7]: self.lineEdit_maximum_optimal_scale.setText(str(data[0][7]))
-        if data[0][10]: self.textbox_spatial_level.setPlainText(data[0][10])
+        if data[0][0]: self.txt_title.setPlainText(data[0][0])
+        if data[0][1]: self.txt_abstract.setPlainText(data[0][1])
+        if data[0][2]: self.txt_project_number.setPlainText(data[0][2])
+        if data[0][4]: self.txt_keywords.setPlainText(str(data[0][4]))
+        if data[0][6]: self.lne_minimum_optimal_scale.setText(str(data[0][6]))
+        if data[0][7]: self.lne_maximum_optimal_scale.setText(str(data[0][7]))
+        if data[0][10]: self.txt_spatial_level.setPlainText(data[0][10])
         
         # get categories and fill comboBox
-        self.comboBox_categories.clear()
+        self.cmb_categories.clear()
         self.categories = get_glossary(connection, 'dataset.categories')
-        self.comboBox_categories.addItems(self.categories.values())  # fill comboBox with categories
+        self.cmb_categories.addItems(self.categories.values())  # fill comboBox with categories
         selected_categories_keys = postgres_array_to_list(data[0][3])
         selected_categories_values = []
         for i in selected_categories_keys:
             selected_categories_values.append(self.categories[i])
-        self.comboBox_categories.setCheckedItems(selected_categories_values)  # set selected categories as checked
+        self.cmb_categories.setCheckedItems(selected_categories_values)  # set selected categories as checked
         
         # get themes and fill comboBox
-        self.comboBox_themes.clear()
+        self.cmb_themes.clear()
         self.themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
         selected_themes_keys = postgres_array_to_list(data[0][5])
         selected_themes_values = []
         for theme in self.themes.values():
-            self.comboBox_themes.addItem(theme['label'], theme['code'])
+            self.cmb_themes.addItem(theme['label'], theme['code'])
             for i in selected_themes_keys:
                 if i == theme['code']:
                     selected_themes_values.append(theme['label'])
-        self.comboBox_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
+        self.cmb_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
         
         # get link types and fill comboBox
-        self.comboBox_link_types.clear()
+        self.cmb_link_type.clear()
         link_types = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.type' ORDER BY item_order, code")
         for link_type in link_types.values():
-            self.comboBox_link_types.addItem(link_type['label'], link_type['code'])
-        self.comboBox_link_types.setCurrentIndex(-1)
+            self.cmb_link_type.addItem(link_type['label'], link_type['code'])
+        self.cmb_link_type.setCurrentIndex(-1)
         
         # get MIME types and fill comboBox
-        self.comboBox_link_mimes.clear()
+        self.cmb_link_mime.clear()
         link_mimes = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.mime' ORDER BY item_order, code")
         for link_mime in link_mimes.values():
-            self.comboBox_link_mimes.addItem(f"{link_mime['code']}: {link_mime['label']}", link_mime['code'])
-        self.comboBox_link_mimes.setCurrentIndex(-1)
+            self.cmb_link_mime.addItem(f"{link_mime['code']}: {link_mime['label']}", link_mime['code'])
+        self.cmb_link_mime.setCurrentIndex(-1)
+        
+        # set up linke type presets 
+        self.cmb_link_type_preset.clear()
+        for preset in LINK_TYPE_PRESETS:
+            self.cmb_link_type_preset.addItem(preset)
+        self.cmb_link_type_preset.setCurrentIndex(-1)
         
         # get links and fill comboBox
-        self.comboBox_linknames.clear()
+        self.cmb_link_select.clear()
         self.clear_linkinfo(False)
         self.links.read_from_db(connection, self.dataset_id)
         self.current_link_id = None  # heißt: gibt noch keinen Link, der angezeigt werden kann
         if self.links.count():
             for link in self.links.get_all():
                 #LOGGER.debug(f'  add item {link=}')
-                self.comboBox_linknames.addItem(link['name'], link['id'])
-            self.comboBox_linknames.setCurrentIndex(0)
+                self.cmb_link_select.addItem(link['name'], link['id'])
+            self.cmb_link_select.setCurrentIndex(0)
             LOGGER.debug(f'open_editor(): {self.current_link_id=}')
         self.tab_links_update_form()
         
@@ -410,13 +428,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         return result
 
     def write_edits_to_db(self, connection):
-        title = self.textbox_title.toPlainText()
-        abstract = self.textbox_abstract.toPlainText()
-        project_number = self.textbox_project_number.toPlainText()
-        keywords = self.textbox_keywords.toPlainText()
-        spatial_level = self.textbox_spatial_level.toPlainText()
-        minimum_optimal_scale = self.lineEdit_minimum_optimal_scale.text()
-        maximum_optimal_scale = self.lineEdit_maximum_optimal_scale.text()
+        title = self.txt_title.toPlainText()
+        abstract = self.txt_abstract.toPlainText()
+        project_number = self.txt_project_number.toPlainText()
+        keywords = self.txt_keywords.toPlainText()
+        spatial_level = self.txt_spatial_level.toPlainText()
+        minimum_optimal_scale = self.lne_minimum_optimal_scale.text()
+        maximum_optimal_scale = self.lne_maximum_optimal_scale.text()
         if not minimum_optimal_scale:
             minimum_optimal_scale = 'NULL'
         if not maximum_optimal_scale:
@@ -426,10 +444,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.save_link(self.current_link_id)
         self.links.write_to_db(connection, self.dataset_id)
         
-        new_categories_keys = dict_reverse_lookup(self.categories, self.comboBox_categories.checkedItems())
+        new_categories_keys = dict_reverse_lookup(self.categories, self.cmb_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
         
-        new_themes_values = self.comboBox_themes.checkedItems()
+        new_themes_values = self.cmb_themes.checkedItems()
         new_themes_keys = []
         for theme in self.themes.values():
             for i in new_themes_values:
