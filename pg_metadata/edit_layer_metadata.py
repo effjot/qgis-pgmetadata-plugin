@@ -6,14 +6,18 @@ Created on Thu Sep  8 14:16:32 2022
 """
 
 import logging
-from dataclasses import dataclass
 from collections import OrderedDict, defaultdict
 from qgis.PyQt.QtWidgets import QDialog
 from qgis.core import (
     QgsApplication,
     QgsProviderConnectionException
 )
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import QVariant
+from PyQt5.QtWidgets import (
+    QMessageBox,
+    QTableWidgetItem,
+    QHeaderView
+)
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 from pg_metadata.qgis_plugin_tools.tools.resources import load_ui
 from qgis.PyQt.QtGui import QIntValidator
@@ -77,15 +81,21 @@ def get_glossary(connection, field: str) -> OrderedDict:
     return terms
 
 
+def replace_qvariantnull(iterable):
+    return map(lambda x: None if type(x) == QVariant and x.isNull() else x,
+               iterable)
+
 def query_to_ordereddict(connection, id_col: str, columns: list[str], from_where_clause: str) -> OrderedDict:
     columns.insert(0, id_col)
     sql = f"SELECT {', '.join(columns)} {from_where_clause}"
+    #LOGGER.info(f'query(): {sql=}')
     try:
         rows = connection.executeSql(sql)
     except QgsProviderConnectionException as e:
         LOGGER.critical(tr('Error when querying the database: ') + str(e))
         return False
-    terms = [defaultdict(lambda: None, zip(columns, row)) for row in rows]
+    terms = [defaultdict(lambda: None, zip(columns, replace_qvariantnull(row)))
+             for row in rows]
     terms_by_id = OrderedDict()
     for t in terms:
         terms_by_id[t[id_col]] = t
@@ -204,6 +214,62 @@ class Links:
             self.delete(link_id)
 
 
+class AvailableContacts:
+    def __init__(self):
+        self.contacts = OrderedDict()
+        self.organisation_members = defaultdict(OrderedDict, {})
+
+    def clear(self):
+        self.contacts.clear()
+        self.organisation_members.clear()
+
+    def read_from_db(self, connection, sort_key='organisation_name, organisation_unit, name'):
+        self.clear()
+        self.contacts = query_to_ordereddict(
+            connection, 'id',
+            ['name', 'organisation_name', 'organisation_unit', 'email', 'phone'],
+            f"FROM pgmetadata.contact ORDER BY {sort_key}")
+        for contact_id, contact in self.contacts.items():
+            org = contact['organisation_name']
+            if org:
+                self.organisation_members[org][contact_id] = contact
+
+    def get(self, contact_id: int):
+        if contact_id not in self.contacts:
+            return None
+        return self.contacts[contact_id]
+    
+    def get_all(self):
+        return self.contacts.values()
+    
+    def get_organisation(self, org_name: str):
+        if org_name in self.organisation_members:
+            return self.organisation_members[org_name]
+        else:
+            return None
+
+
+class AssignedContacts:
+    def __init__(self):
+        self.assignments = OrderedDict()
+    
+    def clear(self):
+        self.assignments.clear()
+
+    def count(self):
+        if not self.assignments:
+            return 0
+        return len(self.assignments)
+
+    def read_from_db(self, connection, dataset_id: int, sort_key='contact_role, id'):
+        self.assignments = query_to_ordereddict(
+            connection, 'id', ['contact_role', 'fk_id_contact', 'fk_id_dataset'],
+            f"FROM pgmetadata.dataset_contact WHERE fk_id_dataset = {dataset_id} ORDER by {sort_key}")
+
+    def get_all(self):
+        return self.assignments.values()
+
+
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
     def __init__(self, parent=None):
         super().__init__()
@@ -227,9 +293,12 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
 
         self.tab_current_idx: int = self.tabWidget.currentIndex()
         self.tab_links_idx: int = self.tabWidget.indexOf(self.tab_links)
+        self.tab_contacts_idx: int = self.tabWidget.indexOf(self.tab_contacts)
         
         self.links = Links()
         self.current_link_id: int
+        self.available_contacts = AvailableContacts()
+        self.assigned_contacts = AssignedContacts()
 
     def tab_links_clear_form(self):
         #FIXME: reset_index nötig? Umbenennen in tab_links_clear_form()
@@ -317,12 +386,14 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         LOGGER.debug('tab_current_changed()')
         prev_tab_idx = self.tab_current_idx
         self.tab_current_idx = self.tabWidget.currentIndex()
+
         if prev_tab_idx == self.tab_links_idx:  # Changed from the Links tab to another → save currently edited link
             self.save_link(self.current_link_id)
         elif self.tab_current_idx == self.tab_links_idx:
             self.tab_links_update_form()
-        else:
-            LOGGER.debug('  nicht im Tab -> fertig')
+
+        if self.tab_current_idx == self.tab_contacts_idx:
+            self.tab_contacts_update_form()
         
     def tab_links_update_form(self):
         LOGGER.debug('tab_links_update_form()')
@@ -352,6 +423,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.debug(f'  link mime {current_link["mime"]}: idx = {idx}')
             self.cmb_link_mime.setCurrentIndex(idx)
         if current_link['size']: self.lne_link_size.setText(str(current_link['size']))
+
+    def tab_contacts_update_form(self):
+        #LOGGER.debug(f"Available contacts: {self.available_contacts.get_organisation('GCI GmbH')}")
+        pass
 
     def dlg_accept(self):
         """OK-Button bestätigt+schließt nur, wenn aktueller Link gespeichert werden konnte."""
@@ -420,7 +495,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.cmb_link_mime.addItem(f"{link_mime['code']}: {link_mime['label']}", link_mime['code'])
         self.cmb_link_mime.setCurrentIndex(-1)
         
-        # set up linke type presets 
+        # set up link type presets 
         self.cmb_link_type_preset.clear()
         for preset in LINK_TYPE_PRESETS:
             self.cmb_link_type_preset.addItem(preset)
@@ -437,6 +512,33 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.cmb_link_select.setCurrentIndex(0)
             LOGGER.debug(f'open_editor(): {self.current_link_id=}')
         self.tab_links_update_form()
+        
+        # set up contacts form
+        self.available_contacts.read_from_db(connection)
+        self.roles = get_glossary(connection, 'contact.contact_role')
+        self.assigned_contacts.read_from_db(connection, self.dataset_id)
+        self.table_contacts.setRowCount(self.assigned_contacts.count())
+        for row, assignment in enumerate(self.assigned_contacts.get_all()):
+            contact = self.available_contacts.get(assignment['fk_id_contact'])
+            role = QTableWidgetItem(self.roles[assignment['contact_role']])
+            name = QTableWidgetItem(contact.get('name', ''))
+            org_name = QTableWidgetItem(contact.get('organisation_name', ''))
+            org_unit = QTableWidgetItem(contact.get('organisation_unit', ''))
+            email = QTableWidgetItem(contact.get('email', ''))
+            phone = QTableWidgetItem(contact.get('phone', ''))
+            self.table_contacts.setItem(row, 0, role)
+            self.table_contacts.setItem(row, 1, name)
+            self.table_contacts.setItem(row, 2, org_name)
+            self.table_contacts.setItem(row, 3, org_unit)
+            self.table_contacts.setItem(row, 4, email)
+            self.table_contacts.setItem(row, 5, phone)
+        self.table_contacts.horizontalHeader().setVisible(True)
+        self.table_contacts.resizeColumnsToContents()
+        hdr = self.table_contacts.horizontalHeader()
+        for col in range(self.table_contacts.columnCount()):
+            hdr.setSectionResizeMode(col, QHeaderView.Interactive)
+            if hdr.sectionSize(col) > 180:
+                hdr.resizeSection(col, 180)
         
     def open_editor(self, datasource_uri, connection):
         self.prepare_editor(datasource_uri, connection)
