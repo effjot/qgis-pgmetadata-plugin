@@ -52,6 +52,27 @@ WHERE g.field = t.field AND g.code = t.code;
 DROP TABLE pgmetadata.t_glossary;
 
 
+-- Glossary views for edit dialog
+
+CREATE OR REPLACE VIEW pgmetadata.v_glossary_translation_de AS
+  SELECT glossary.id, glossary.field, glossary.code, glossary.item_order,
+    COALESCE(glossary.label_de, glossary.label_en) AS label,
+    COALESCE(glossary.description_de, glossary.description_en) AS description
+  FROM pgmetadata.glossary
+  ORDER BY glossary.field, glossary.code, glossary.item_order;
+
+COMMENT ON VIEW pgmetadata.v_glossary_translation_de IS 'Translation of glossary labels and descriptions, with fallback to English if terms are not translated';
+
+CREATE OR REPLACE VIEW pgmetadata.v_glossary_translation_en AS
+  SELECT glossary.id, glossary.field, glossary.code, glossary.item_order,
+    glossary.label_en AS label,
+    glossary.description_en AS description
+  FROM pgmetadata.glossary
+  ORDER BY glossary.field, glossary.code, glossary.item_order;
+  
+COMMENT ON VIEW pgmetadata.v_glossary_translation_en IS 'Original English terms of glossary labels and descriptions';
+
+
 -- DATASET
 
 -- Add license_attribution and project_number fields to table dataset
@@ -169,6 +190,5 @@ CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
 
 -- VIEW v_dataset
 COMMENT ON VIEW pgmetadata.v_dataset IS 'Formatted version of dataset data, with all the codes replaced by corresponding labels taken from pgmetadata.glossary. Used in the function in charge of building the HTML metadata content.';
-
 
 COMMIT;

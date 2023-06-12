@@ -27,3 +27,4 @@ pg_metadata/i18n/*.ts
 *.gpkg-wal
 *.gpkg-shm
 .~lock.*
+*.stackdump

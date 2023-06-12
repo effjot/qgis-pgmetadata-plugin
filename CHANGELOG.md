@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 1.2.3-gci2 - 2023-06-10
+* Metadata editor added to dock
+
 ## 1.2.3-gci1 - 2023-06-08
 * Merged with current upstream/master (release 1.2.2)
 * Move plugin to Database menu

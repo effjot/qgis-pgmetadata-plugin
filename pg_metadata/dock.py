@@ -41,6 +41,7 @@ from qgis.PyQt.QtWidgets import (
 )
 from qgis.utils import iface
 
+from pg_metadata.edit_layer_metadata import PgMetadataLayerEditor
 from pg_metadata.connection_manager import (
     check_pgmetadata_is_installed,
     connections_list,
@@ -99,6 +100,13 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         self.theme_layers.setIcon(QgsApplication.getThemeIcon('/mActionAddGroup.svg'))
         self.theme_layers.clicked.connect(self.add_theme_layers)
 
+        # Add edit layer button
+        self.edit_layer.setText('')
+        self.edit_layer.setEnabled(False)
+        self.edit_layer.setToolTip(tr("Open dialog window to edit metadata"))
+        self.edit_layer.setIcon(QgsApplication.getThemeIcon('/mActionToggleEditing.svg'))
+        self.edit_layer.clicked.connect(self.edit_layer_metadata)
+
         # Settings menu
         self.config.setAutoRaise(True)
         self.config.setToolTip(tr("Settings"))
@@ -154,6 +162,8 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             self.default_html_content_not_pg_layer()
 
         iface.layerTreeView().currentLayerChanged.connect(self.layer_changed)
+        if iface.activeLayer:
+            self.layer_changed(iface.activeLayer())
 
     def export_dock_content(self, output_format: OutputFormats):
         """ Export the current displayed metadata sheet to the given format. """
@@ -254,8 +264,11 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
     def layer_changed(self, layer):
         """ When the layer has changed in the legend, we must check this new layer. """
         self.save_button.setEnabled(False)
+        self.edit_layer.setEnabled(False)
         self.current_datasource_uri = None
         self.current_connection = None
+        self.empty_metadata_datasource_uri = None
+        self.empty_metadata_connection = None
 
         if not settings_connections_names():
             self.default_html_content_not_installed()
@@ -316,9 +329,10 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
 
             self.set_html_content(body=data[0][0])
             self.save_button.setEnabled(True)
+            self.edit_layer.setEnabled(True)
             self.current_datasource_uri = uri
             self.current_connection = connection
-
+            
             break
 
         else:
@@ -328,6 +342,9 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                 tr('The layer {origin} {schema}.{table} is missing metadata.').format(
                     origin=origin, schema=uri.schema(), table=uri.table())
             )
+            self.edit_layer.setEnabled(True)
+            self.empty_metadata_datasource_uri = uri
+            self.empty_metadata_connection = connection
 
     def add_flatten_dataset_table(self):
         """ Add a flatten dataset table with all links and contacts. """
@@ -477,6 +494,32 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         iface.messageBar().pushMessage(tr("{n} layers from theme “{theme}” added").format(n=len(layers),
                                                                                           theme=theme),
                                        level=Qgis.Info)
+
+    def edit_layer_metadata(self):
+        edit_dialog = PgMetadataLayerEditor()
+        if self.empty_metadata_connection:
+            new = True
+            uri = self.empty_metadata_datasource_uri
+            conn = self.empty_metadata_connection
+        else:
+            new = False
+            uri = self.current_datasource_uri
+            conn = self.current_connection
+        res = edit_dialog.open_editor(uri, conn, new=new)
+        LOGGER.debug(f'edit_dialog for {new=} returned {res=}')
+        if res:
+            if new:
+                msg = tr("Metadata for layer {} have been successfully added")
+            else:
+                msg = tr("Metadata for layer {} have been successfully edited")
+            iface.messageBar().pushSuccess(tr("Edit metadata"), msg.format(uri.table()))
+        else:
+            if new:
+                msg = tr("Adding metadata for layer {} has failed")
+            else:
+                msg = tr("Updating metadata for layer {} has failed")
+            iface.messageBar().pushSuccess(tr("Edit metadata"), msg.format(uri.table()))
+        self.layer_changed(iface.activeLayer())
 
     @staticmethod
     def open_external_help():
