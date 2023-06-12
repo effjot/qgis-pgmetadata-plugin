@@ -306,6 +306,14 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                 self.default_html_content_not_installed()
                 continue
 
+            #FIXME: why loop at all over connections?
+            conn_uri = QgsDataSourceUri(connection.uri())
+            LOGGER.debug(f"conn.uri.db: {conn_uri.database()}, layeruri: {uri.database()}")
+            if conn_uri.database() == uri.database():
+                conn_found = connection
+            else:
+                continue
+
             if not check_pgmetadata_is_installed(connection_name):
                 LOGGER.critical(tr('PgMetadata is not installed on {}').format(connection_name))
                 # FIXME: Is this really critical, or just a warning or info?
@@ -332,7 +340,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             self.edit_layer.setEnabled(True)
             self.current_datasource_uri = uri
             self.current_connection = connection
-            
+            LOGGER.debug(f"conn found: {connection_name}")
             break
 
         else:
@@ -344,7 +352,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             )
             self.edit_layer.setEnabled(True)
             self.empty_metadata_datasource_uri = uri
-            self.empty_metadata_connection = connection
+            self.empty_metadata_connection = conn_found
 
     def add_flatten_dataset_table(self):
         """ Add a flatten dataset table with all links and contacts. """
