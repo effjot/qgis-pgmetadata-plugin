@@ -296,7 +296,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
 
         # TODO, find the correct connection to query according to the datasource
         # The metadata HTML is wrong if there are many pgmetadata in different databases
-
+        conn_found = None
         for connection_name in connections:
             connection = self.metadata.findConnection(connection_name)
             if not connection:  # FIXME: Can this still happen (see above)?
@@ -350,9 +350,10 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                 tr('The layer {origin}.{schema}.{table} is missing metadata.').format(
                     origin=origin, schema=uri.schema(), table=uri.table())
             )
-            self.edit_layer.setEnabled(True)
-            self.empty_metadata_datasource_uri = uri
-            self.empty_metadata_connection = conn_found
+            if conn_found:
+                self.edit_layer.setEnabled(True)
+                self.empty_metadata_datasource_uri = uri
+                self.empty_metadata_connection = conn_found
 
     def add_flatten_dataset_table(self):
         """ Add a flatten dataset table with all links and contacts. """
@@ -514,19 +515,21 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             uri = self.current_datasource_uri
             conn = self.current_connection
         res = edit_dialog.open_editor(uri, conn, new=new)
-        LOGGER.debug(f'edit_dialog for {new=} returned {res=}')
+        LOGGER.debug(f'Edit_dialog for {new=} {uri.table()=} returned {res=}')
         if res:
             if new:
                 msg = tr("Metadata for layer {} have been successfully added")
             else:
                 msg = tr("Metadata for layer {} have been successfully edited")
             iface.messageBar().pushSuccess(tr("Edit metadata"), msg.format(uri.table()))
-        else:
+        elif res == False:
             if new:
-                msg = tr("Adding metadata for layer {} failed/cancelled")
+                msg = tr("Adding metadata for layer {} has failed")
             else:
-                msg = tr("Updating metadata for layer {} failed/cancelled")
+                msg = tr("Updating metadata for layer {} has failed")
             iface.messageBar().pushCritical(tr("Edit metadata"), msg.format(uri.table()))
+        else:
+            LOGGER.info(f'Edit dialog for layer {uri.table()} cancelled')
         self.layer_changed(iface.activeLayer())
 
     @staticmethod

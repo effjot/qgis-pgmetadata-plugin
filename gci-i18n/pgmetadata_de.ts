@@ -89,32 +89,32 @@
         <translation>Datenbank</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="369"/>
+        <location filename="../pg_metadata/dock.py" line="370"/>
         <source>Choose the database to add the catalog</source>
         <translation>Datenbank auswählen, zu der der Katalog hinzugefügt werden soll</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="386"/>
+        <location filename="../pg_metadata/dock.py" line="387"/>
         <source>Catalog</source>
         <translation>Katalog</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="564"/>
+        <location filename="../pg_metadata/dock.py" line="567"/>
         <source>The &apos;pgmetadata&apos; schema is not installed or configured.</source>
         <translation>Das Schema „pgmetadata“ ist nicht installiert oder eingerichtet.</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="567"/>
+        <location filename="../pg_metadata/dock.py" line="570"/>
         <source>Either install PgMetadata on a database (Processing → Database → Installation of the database structure) or make the link to an existing PgMetadata database (Processing → Administration → Set connections to database).</source>
         <translation>Installieren Sie entweder PgMetadata in eine Datenbank (Verarbeitungswerkzeuge → PgMetadata → Datenbank → Datenbankstruktur installieren) oder stellen Sie eine Verbindung zu einer vorhandenen PgMetadata-Datenbank her (Verarbeitungswerkzeuge → PgMetadata → Verwaltung → Datenbankverbindungen einrichten).</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="574"/>
+        <location filename="../pg_metadata/dock.py" line="577"/>
         <source>Visit the documentation on &lt;a href=&quot;https://docs.3liz.org/qgis-pgmetadata-plugin/&quot;&gt;docs.3liz.org&lt;/a&gt; to check how to setup PgMetadata.</source>
         <translation>Lesen Sie die Dokumentation auf &lt;a href=&quot;https://docs.3liz.org/qgis-pgmetadata-plugin/&quot;&gt;docs.3liz.org&lt;/a&gt; zur Einrichtung von PgMetadata.</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="583"/>
+        <location filename="../pg_metadata/dock.py" line="586"/>
         <source>You should click on a layer in the legend which is stored in PostgreSQL.</source>
         <translation>Sie sollten in der Legende auf einen Layer klicken, der in PostgreSQL gespeichert ist.</translation>
     </message>
@@ -454,37 +454,37 @@
         <translation>Alle Layer eines Themas hinzufügen</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="404"/>
+        <location filename="../pg_metadata/dock.py" line="405"/>
         <source>Choose the database to add a theme from</source>
         <translation>Datenbank auswählen, aus der Themen hinzugefügt werden sollen</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="424"/>
+        <location filename="../pg_metadata/dock.py" line="425"/>
         <source>No themes defined in {}</source>
         <translation>In {} sind keine Themen definiert</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="430"/>
+        <location filename="../pg_metadata/dock.py" line="431"/>
         <source>Load theme</source>
         <translation>Thema laden</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="431"/>
+        <location filename="../pg_metadata/dock.py" line="432"/>
         <source>Choose the theme to add layers from</source>
         <translation>Thema auswählen, aus dem Layer hinzugefügt werden sollen</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="454"/>
+        <location filename="../pg_metadata/dock.py" line="455"/>
         <source>No tables found for theme {}</source>
         <translation>Keine Tabellen für Thema „{}“ gefunden</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="459"/>
+        <location filename="../pg_metadata/dock.py" line="460"/>
         <source>Theme {}</source>
         <translation>Thema {}</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="502"/>
+        <location filename="../pg_metadata/dock.py" line="503"/>
         <source>{n} layers from theme “{theme}” added</source>
         <translation>{n} Layer aus Thema „{theme}“ hinzugefügt</translation>
     </message>
@@ -504,27 +504,27 @@
         <translation type="obsolete">Metadaten für Layer {} wurden geändert und erfolgreich gespeichert</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="529"/>
+        <location filename="../pg_metadata/dock.py" line="530"/>
         <source>Edit metadata</source>
         <translation>Metadatenbearbeitung</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="517"/>
+        <location filename="../pg_metadata/dock.py" line="527"/>
         <source>Adding metadata for layer {} has failed</source>
-        <translation type="obsolete">Hinzufügen der Metadaten für Layer {} ist fehlgeschlagen</translation>
+        <translation>Hinzufügen der Metadaten für Layer {} ist fehlgeschlagen</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="519"/>
+        <location filename="../pg_metadata/dock.py" line="529"/>
         <source>Updating metadata for layer {} has failed</source>
-        <translation type="obsolete">Ändern der Metadaten für Layer {} ist fehlgeschlagen</translation>
+        <translation>Ändern der Metadaten für Layer {} ist fehlgeschlagen</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="520"/>
+        <location filename="../pg_metadata/dock.py" line="521"/>
         <source>Metadata for layer {} have been successfully added</source>
         <translation>Metadaten für Layer {} wurden erfolgreich hinzugefügt</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/dock.py" line="522"/>
+        <location filename="../pg_metadata/dock.py" line="523"/>
         <source>Metadata for layer {} have been successfully edited</source>
         <translation>Metadaten für Layer {} wurden erfolgreich bearbeitet</translation>
     </message>
@@ -536,12 +536,12 @@
     <message>
         <location filename="../pg_metadata/dock.py" line="526"/>
         <source>Adding metadata for layer {} failed/cancelled</source>
-        <translation>Hinzufügen der Metadaten für Layer {} ist fehlgeschlagen / wurde abgebrochen</translation>
+        <translation type="obsolete">Hinzufügen der Metadaten für Layer {} ist fehlgeschlagen / wurde abgebrochen</translation>
     </message>
     <message>
         <location filename="../pg_metadata/dock.py" line="528"/>
         <source>Updating metadata for layer {} failed/cancelled</source>
-        <translation>Ändern der Metadaten für Layer {} ist fehlgeschlagen / wurde abgebrochen</translation>
+        <translation type="obsolete">Ändern der Metadaten für Layer {} ist fehlgeschlagen / wurde abgebrochen</translation>
     </message>
 </context>
 <context>

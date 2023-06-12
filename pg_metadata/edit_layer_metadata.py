@@ -748,16 +748,18 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.cmb_creator.setCurrentIndex(-1)
         
     def open_editor(self, datasource_uri, connection, new: bool = False):
+        """Show editor dialog, return True for successful edit, None for cancel, False for error"""
         self.new_metadata_record = new
         self.prepare_editor(datasource_uri, connection)
         self.show()
         result = self.exec_()
         if result:
-            self.write_edits_to_db(connection)
-        self.current_link_id = None  # zurücksetzen für nächstes Mal
+            result = self.write_edits_to_db(connection)
+        else:
+            result = None
         return result
 
-    def write_edits_to_db(self, connection):
+    def write_edits_to_db(self, connection) -> bool:
         schema = sql_quote_or_null(self.schema)
         table = sql_quote_or_null(self.table)
         title = sql_quote_or_null(self.txt_title.toPlainText())
@@ -772,10 +774,6 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         spatial_level = sql_quote_or_null(self.txt_spatial_level.toPlainText())
         minimum_optimal_scale = sql_quote_or_null(self.lne_minimum_optimal_scale.text(), as_number=True)
         maximum_optimal_scale = sql_quote_or_null(self.lne_maximum_optimal_scale.text(), as_number=True)
-        # if not minimum_optimal_scale:
-        #     minimum_optimal_scale = 'NULL'
-        # if not maximum_optimal_scale:
-        #     maximum_optimal_scale = 'NULL'
 
         new_categories_keys = dict_reverse_lookup(self.categories, self.cmb_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
