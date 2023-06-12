@@ -76,13 +76,13 @@ class LocatorFilter(QgsLocatorFilter):
         # Search items from pgmetadata.dataset
         locale = QgsSettings().value("locale/userLocale", QLocale().name())
         locale = locale.split('_')[0].lower()
-        sql = "SELECT concat(d.title, ' (', d.schema_name, '.',d.table_name, ')') AS displayString,"
+        sql = "SELECT concat(d.title, ' (', d.schema_name, '.',d.table_name, ') ', d.project_number) AS displayString,"
         sql += " d.schema_name, d.table_name, d.geometry_type, title"
         sql += " FROM pgmetadata.export_datasets_as_flat_table('{locale}') d"
         sql += " INNER JOIN pgmetadata.v_valid_dataset v"
         sql += " ON concat(v.table_name, '.', v.schema_name) = concat(d.table_name, '.', d.schema_name)"
         sql += " WHERE concat(d.title, ' ', d.abstract, ' ', d.table_name, ' ',"
-        sql += "  d.categories, ' ', d.keywords, ' ', d.themes) ILIKE '%{search}%'"
+        sql += "  d.project_number, d.categories, ' ', d.keywords, ' ', d.themes) ILIKE '%{search}%'"
         sql += " LIMIT 100"
         sql = sql.format(locale=locale, search=search)
         try:

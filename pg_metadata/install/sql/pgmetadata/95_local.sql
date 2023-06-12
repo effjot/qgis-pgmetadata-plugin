@@ -187,8 +187,88 @@ CREATE OR REPLACE VIEW pgmetadata.v_dataset AS
    FROM ss
   GROUP BY ss.id, ss.uid, ss.table_name, ss.schema_name, ss.title, ss.abstract, ss.keywords, ss.spatial_level, ss.minimum_optimal_scale, ss.maximum_optimal_scale, ss.publication_date, ss.publication_frequency, ss.license, ss.license_attribution, ss.project_number, ss.confidentiality, ss.feature_count, ss.geometry_type, ss.projection_name, ss.projection_authid, ss.spatial_extent, ss.creation_date, ss.update_date, ss.data_last_update;
 
-
 -- VIEW v_dataset
 COMMENT ON VIEW pgmetadata.v_dataset IS 'Formatted version of dataset data, with all the codes replaced by corresponding labels taken from pgmetadata.glossary. Used in the function in charge of building the HTML metadata content.';
+
+
+-- v_export_table
+drop view if exists pgmetadata.v_export_table;
+CREATE VIEW pgmetadata.v_export_table AS
+ SELECT d.uid,
+    d.table_name,
+    d.schema_name,
+    d.title,
+    d.abstract,
+    d.categories,
+    d.themes,
+    d.keywords,
+    d.spatial_level,
+    d.minimum_optimal_scale,
+    d.maximum_optimal_scale,
+    d.publication_date,
+    d.publication_frequency,
+    d.license,
+    d.license_attribution,
+    d.project_number,
+    d.confidentiality,
+    d.feature_count,
+    d.geometry_type,
+    d.projection_name,
+    d.projection_authid,
+    d.spatial_extent,
+    d.creation_date,
+    d.update_date,
+    d.data_last_update,
+    string_agg(((l.name || ': '::text) || l.url), ', '::text) AS links,
+    string_agg((((((c.name || ' ('::text) || c.organisation_name) || ')'::text) || ' - '::text) || c.contact_role), ', '::text) AS contacts
+   FROM ((pgmetadata.v_dataset d
+     LEFT JOIN pgmetadata.v_link l ON (((l.table_name = d.table_name) AND (l.schema_name = d.schema_name))))
+     LEFT JOIN pgmetadata.v_contact c ON (((c.table_name = d.table_name) AND (c.schema_name = d.schema_name))))
+  GROUP BY d.uid, d.table_name, d.schema_name, d.title, d.abstract, d.categories, d.themes, d.keywords, d.spatial_level, d.minimum_optimal_scale, d.maximum_optimal_scale, d.publication_date, d.publication_frequency, d.license, d.license_attribution, d.project_number, d.confidentiality, d.feature_count, d.geometry_type, d.projection_name, d.projection_authid, d.spatial_extent, d.creation_date, d.update_date, d.data_last_update
+  ORDER BY d.schema_name, d.table_name;
+
+-- VIEW v_export_table
+COMMENT ON VIEW pgmetadata.v_export_table IS 'Generate a flat representation of the datasets. Links and contacts are grouped in one column each';
+
+
+-- export_datasets_as_flat_table(text)
+drop function if exists pgmetadata.export_datasets_as_flat_table;
+CREATE FUNCTION pgmetadata.export_datasets_as_flat_table(_locale text) RETURNS TABLE(uid uuid, table_name text, schema_name text, title text, abstract text, categories text, themes text, keywords text, spatial_level text, minimum_optimal_scale text, maximum_optimal_scale text, publication_date timestamp without time zone, publication_frequency text, license text, license_attributen text, project_number text, confidentiality text, feature_count integer, geometry_type text, projection_name text, projection_authid text, spatial_extent text, creation_date timestamp without time zone, update_date timestamp without time zone, data_last_update timestamp without time zone, links text, contacts text)
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    locale_exists boolean;
+    sql_text text;
+BEGIN
+
+    -- Check if the _locale parameter corresponds to the available locales
+    _locale = lower(_locale);
+    SELECT _locale IN (SELECT locale FROM pgmetadata.v_locales)
+    INTO locale_exists
+    ;
+    IF NOT locale_exists THEN
+        _locale = 'en';
+    END IF;
+
+    -- Set locale
+    -- We must use EXECUTE in order to have _locale to be correctly interpreted
+    sql_text = concat('SET SESSION "pgmetadata.locale" = ', quote_literal(_locale));
+    EXECUTE sql_text;
+
+    -- Return content
+    RETURN QUERY
+    SELECT
+    *
+    FROM pgmetadata.v_export_table
+    ;
+
+END;
+$$;
+
+
+-- FUNCTION export_datasets_as_flat_table(_locale text)
+COMMENT ON FUNCTION pgmetadata.export_datasets_as_flat_table(_locale text) IS 'Generate a flat representation of the datasets for a given locale.';
+
+
 
 COMMIT;

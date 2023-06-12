@@ -4,6 +4,7 @@
 
 ## 1.2.3-gci2 - 2023-06-10
 * Metadata editor added to dock
+* Include project number in locator search
 
 ## 1.2.3-gci1 - 2023-06-08
 * Merged with current upstream/master (release 1.2.2)
