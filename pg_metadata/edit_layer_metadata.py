@@ -7,6 +7,7 @@ Created on Thu Sep  8 14:16:32 2022
 
 import logging
 from collections import OrderedDict, defaultdict
+#from typing import Optional
 from qgis.PyQt.QtWidgets import (
     QDialog,
     QInputDialog
@@ -17,6 +18,7 @@ from qgis.core import (
 )
 from PyQt5.QtCore import (
     Qt,
+    QDateTime,
     QVariant
 )
 from PyQt5.QtWidgets import (
@@ -355,6 +357,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lne_maximum_optimal_scale.setValidator(validator)
         self.lne_link_size.setValidator(validator)
         self.tabWidget.currentChanged.connect(self.tab_current_changed)
+        self.btn_datetime_now.setIcon(QgsApplication.getThemeIcon('/propertyicons/temporal.svg'))
+        self.btn_datetime_now.clicked.connect(self.set_datetime_publ)
         self.cmb_link_select.currentIndexChanged.connect(self.tab_links_update_form)
         self.btn_link_add.setIcon(QgsApplication.getThemeIcon('/symbologyAdd.svg'))
         self.btn_link_add.clicked.connect(self.new_link)
@@ -381,6 +385,12 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.current_link_id: int
         self.available_contacts = AvailableContacts()
         self.assigned_contacts = AssignedContacts()
+
+    def set_datetime_publ(self, datetime: QDateTime = None):
+        if not datetime:
+            datetime = QDateTime.currentDateTime()
+        self.dattim_publ.setDateTime(datetime)
+        self.dattim_publ.setEnabled(True)
 
     def tab_links_clear_form(self):
         #FIXME: reset_index nötig? Umbenennen in tab_links_clear_form()
@@ -589,7 +599,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.table = datasource_uri.table()
         self.schema = datasource_uri.schema()
         LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
-        sql = (f"SELECT title, abstract, project_number, categories, keywords, themes, minimum_optimal_scale, maximum_optimal_scale, data_last_update, id, spatial_level FROM pgmetadata.dataset "
+        sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes, "  # 0 - 6
+               "spatial_level, minimum_optimal_scale, maximum_optimal_scale, "  # 7 - 9
+               "publication_date, data_last_update, confidentiality FROM pgmetadata.dataset "  # 10 - 12
                f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
         try:
             data = connection.executeSql(sql)
@@ -597,22 +609,37 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.critical(tr('Error when querying the database: ') + str(e))
             return False
         
-        # get foreign key for links-table #FIXME Nicht nur für Links! Mit dataset_id am Schluss auch zielgerichtet Medatatensatz akutalisieren
-        self.dataset_id = data[0][9]
+        # primary/foreign key for currently edited layer metadata
+        self.dataset_id = data[0][0]
         
-        if data[0][0]: self.txt_title.setPlainText(data[0][0])
-        if data[0][1]: self.txt_abstract.setPlainText(data[0][1])
-        if data[0][2]: self.txt_project_number.setPlainText(data[0][2])
-        if data[0][4]: self.txt_keywords.setPlainText(str(data[0][4]))
-        if data[0][6]: self.lne_minimum_optimal_scale.setText(str(data[0][6]))
-        if data[0][7]: self.lne_maximum_optimal_scale.setText(str(data[0][7]))
-        if data[0][10]: self.txt_spatial_level.setPlainText(data[0][10])
+        # fill simple fields
+        if data[0][1]: self.txt_title.setPlainText(data[0][1])
+        if data[0][2]: self.txt_abstract.setPlainText(data[0][2])
+        if data[0][3]: self.txt_project_number.setPlainText(data[0][3])
+        if data[0][5]: self.txt_keywords.setPlainText(str(data[0][5]))
+        if data[0][7]: self.txt_spatial_level.setPlainText(data[0][7])
+        if data[0][8]: self.lne_minimum_optimal_scale.setText(str(data[0][8]))
+        if data[0][9]: self.lne_maximum_optimal_scale.setText(str(data[0][9]))
+        publ = data[0][10]
+        if publ and not (type(publ) == QVariant and publ.isNull()):
+            self.set_datetime_publ(publ)
+        
+        # get confidentialty value and fill combobox
+        self.cmb_confidentiality.clear()
+        self.confidentialities = get_glossary(connection, 'dataset.confidentiality')
+        for code, confid in self.confidentialities.items():
+            self.cmb_confidentiality.addItem(confid, code)
+        selected_code = data[0][12]
+        if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
+            self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
+        else:        
+            self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData(selected_code))
         
         # get categories and fill comboBox
         self.cmb_categories.clear()
         self.categories = get_glossary(connection, 'dataset.categories')
         self.cmb_categories.addItems(self.categories.values())  # fill comboBox with categories
-        selected_categories_keys = postgres_array_to_list(data[0][3])
+        selected_categories_keys = postgres_array_to_list(data[0][4])
         selected_categories_values = []
         for i in selected_categories_keys:
             selected_categories_values.append(self.categories[i])
@@ -621,7 +648,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         # get themes and fill comboBox
         self.cmb_themes.clear()
         self.themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
-        selected_themes_keys = postgres_array_to_list(data[0][5])
+        selected_themes_keys = postgres_array_to_list(data[0][6])
         selected_themes_values = []
         for theme in self.themes.values():
             self.cmb_themes.addItem(theme['label'], theme['code'])
@@ -695,6 +722,11 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         abstract = self.txt_abstract.toPlainText()
         project_number = self.txt_project_number.toPlainText()
         keywords = self.txt_keywords.toPlainText()
+        if self.dattim_publ.isEnabled():
+            pubdate = "'" + self.dattim_publ.dateTime().toString(Qt.ISODate) + "'"
+        else:
+            pubdate = 'NULL'
+        confidentiality = self.cmb_confidentiality.currentData()
         spatial_level = self.txt_spatial_level.toPlainText()
         minimum_optimal_scale = self.lne_minimum_optimal_scale.text()
         maximum_optimal_scale = self.lne_maximum_optimal_scale.text()
@@ -721,9 +753,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}', "
                f" keywords = '{keywords}', categories = {new_categories_array}, themes = {new_themes_array}, "
+               f" publication_date = {pubdate}, confidentiality = '{confidentiality}', "
                f" minimum_optimal_scale = {minimum_optimal_scale}, maximum_optimal_scale = {maximum_optimal_scale}, spatial_level = '{spatial_level}' "
                f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
-        
         try:
             connection.executeSql(sql)
         except QgsProviderConnectionException as e:
