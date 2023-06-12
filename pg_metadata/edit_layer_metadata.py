@@ -72,6 +72,14 @@ def list_to_postgres_array(lst: list[str]) -> str:
     return 'array[' + ','.join(l) + ']'
 
 
+def sql_quote_or_null(val, as_number=False):
+    if not val or (type(val) == QVariant and val.isNull()):
+        return 'NULL'
+    if as_number or type(val) == int or type(val) == float:
+        return val
+    return f'$q${val}$q$'
+
+
 def dict_reverse_lookup(dictionary: dict, values: list) -> list:
     return [key for key, val in dictionary.items() if val in values]
 
@@ -138,6 +146,9 @@ class Links:
     
     def read_from_db(self, connection, dataset_id: int, sort_key='name'):
         self.clear()
+        if not dataset_id:
+            self.links = OrderedDict()
+            return
         self.links = query_to_ordereddict(
             connection, 'id',
             ['name', 'type', 'url', 'description', 'format', 'mime', 'size', 'fk_id_dataset'],
@@ -283,6 +294,10 @@ class AssignedContacts:
         return len(self.assignments)
 
     def read_from_db(self, connection, dataset_id: int, sort_key='contact_role, id'):
+        self.clear()
+        if not dataset_id:
+            self.assignments = OrderedDict()
+            return
         self.assignments = query_to_ordereddict(
             connection, 'id', ['contact_role', 'fk_id_contact', 'fk_id_dataset'],
             f"FROM pgmetadata.dataset_contact WHERE fk_id_dataset = {dataset_id} ORDER by {sort_key}")
@@ -352,6 +367,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
     def __init__(self, parent=None):
         super().__init__()
         self.setupUi(self)
+        
         validator = QIntValidator(1, 100_000_000, self)
         self.lne_minimum_optimal_scale.setValidator(validator)
         self.lne_maximum_optimal_scale.setValidator(validator)
@@ -380,7 +396,9 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.tab_current_idx: int = self.tabWidget.currentIndex()
         self.tab_links_idx: int = self.tabWidget.indexOf(self.tab_links)
         self.tab_contacts_idx: int = self.tabWidget.indexOf(self.tab_contacts)
-        
+
+        self.new_metadata_record: bool = None
+        self.dataset_id: int = None        
         self.links = Links()
         self.current_link_id: int
         self.available_contacts = AvailableContacts()
@@ -598,16 +616,20 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
     def prepare_editor(self, datasource_uri, connection):
         self.table = datasource_uri.table()
         self.schema = datasource_uri.schema()
-        LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
-        sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes, "  # 0 - 6
-               "spatial_level, minimum_optimal_scale, maximum_optimal_scale, "  # 7 - 9
-               "publication_date, data_last_update, confidentiality FROM pgmetadata.dataset "  # 10 - 12
-               f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
-        try:
-            data = connection.executeSql(sql)
-        except QgsProviderConnectionException as e:
-            LOGGER.critical(tr('Error when querying the database: ') + str(e))
-            return False
+        if self.new_metadata_record:
+            LOGGER.info(f'New metadata for layer {datasource_uri.table()}, {connection}')
+            data = [[None] * 13]
+        else:
+            LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
+            sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes, "  # 0 - 6
+                   "spatial_level, minimum_optimal_scale, maximum_optimal_scale, "  # 7 - 9
+                   "publication_date, data_last_update, confidentiality FROM pgmetadata.dataset "  # 10 - 12
+                   f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
+            try:
+                data = connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when querying the database: ') + str(e))
+                return False
         
         # primary/foreign key for currently edited layer metadata
         self.dataset_id = data[0][0]
@@ -639,7 +661,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.cmb_categories.clear()
         self.categories = get_glossary(connection, 'dataset.categories')
         self.cmb_categories.addItems(self.categories.values())  # fill comboBox with categories
-        selected_categories_keys = postgres_array_to_list(data[0][4])
+        if data[0][4]:
+            selected_categories_keys = postgres_array_to_list(data[0][4])
+        else:
+            selected_categories_keys = []
         selected_categories_values = []
         for i in selected_categories_keys:
             selected_categories_values.append(self.categories[i])
@@ -648,7 +673,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         # get themes and fill comboBox
         self.cmb_themes.clear()
         self.themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
-        selected_themes_keys = postgres_array_to_list(data[0][6])
+        if data[0][6]:
+            selected_themes_keys = postgres_array_to_list(data[0][6])
+        else:
+            selected_themes_keys = []
         selected_themes_values = []
         for theme in self.themes.values():
             self.cmb_themes.addItem(theme['label'], theme['code'])
@@ -708,7 +736,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             self.cmb_creator.addItem(contact, contact_id)
         self.cmb_creator.setCurrentIndex(-1)
         
-    def open_editor(self, datasource_uri, connection):
+    def open_editor(self, datasource_uri, connection, new: bool = False):
+        self.new_metadata_record = new
         self.prepare_editor(datasource_uri, connection)
         self.show()
         result = self.exec_()
@@ -718,28 +747,25 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         return result
 
     def write_edits_to_db(self, connection):
-        title = self.txt_title.toPlainText()
-        abstract = self.txt_abstract.toPlainText()
-        project_number = self.txt_project_number.toPlainText()
-        keywords = self.txt_keywords.toPlainText()
+        schema = sql_quote_or_null(self.schema)
+        table = sql_quote_or_null(self.table)
+        title = sql_quote_or_null(self.txt_title.toPlainText())
+        abstract = sql_quote_or_null(self.txt_abstract.toPlainText())
+        project_number = sql_quote_or_null(self.txt_project_number.toPlainText())
+        keywords = sql_quote_or_null(self.txt_keywords.toPlainText())
         if self.dattim_publ.isEnabled():
             pubdate = "'" + self.dattim_publ.dateTime().toString(Qt.ISODate) + "'"
         else:
             pubdate = 'NULL'
-        confidentiality = self.cmb_confidentiality.currentData()
-        spatial_level = self.txt_spatial_level.toPlainText()
-        minimum_optimal_scale = self.lne_minimum_optimal_scale.text()
-        maximum_optimal_scale = self.lne_maximum_optimal_scale.text()
-        if not minimum_optimal_scale:
-            minimum_optimal_scale = 'NULL'
-        if not maximum_optimal_scale:
-            maximum_optimal_scale = 'NULL'
-        
-        self.save_link(self.current_link_id)
-        self.links.write_to_db(connection, self.dataset_id)
-        
-        self.assigned_contacts.write_to_db(connection, self.dataset_id)
-        
+        confidentiality = sql_quote_or_null(self.cmb_confidentiality.currentData())
+        spatial_level = sql_quote_or_null(self.txt_spatial_level.toPlainText())
+        minimum_optimal_scale = sql_quote_or_null(self.lne_minimum_optimal_scale.text(), as_number=True)
+        maximum_optimal_scale = sql_quote_or_null(self.lne_maximum_optimal_scale.text(), as_number=True)
+        # if not minimum_optimal_scale:
+        #     minimum_optimal_scale = 'NULL'
+        # if not maximum_optimal_scale:
+        #     maximum_optimal_scale = 'NULL'
+
         new_categories_keys = dict_reverse_lookup(self.categories, self.cmb_categories.checkedItems())
         new_categories_array = list_to_postgres_array(new_categories_keys)
         
@@ -751,15 +777,40 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                     new_themes_keys.append(theme['code'])
         new_themes_array = list_to_postgres_array(new_themes_keys)
         
-        sql = (f"UPDATE pgmetadata.dataset SET title = '{title}', abstract = '{abstract}', project_number = '{project_number}', "
-               f" keywords = '{keywords}', categories = {new_categories_array}, themes = {new_themes_array}, "
-               f" publication_date = {pubdate}, confidentiality = '{confidentiality}', "
-               f" minimum_optimal_scale = {minimum_optimal_scale}, maximum_optimal_scale = {maximum_optimal_scale}, spatial_level = '{spatial_level}' "
-               f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
-        try:
-            connection.executeSql(sql)
-        except QgsProviderConnectionException as e:
-            LOGGER.critical(tr('Error when updating the database: ') + str(e))
-            return False
+        if self.new_metadata_record:
+            sql = ("INSERT INTO pgmetadata.dataset (schema_name, table_name, title, abstract, project_number, keywords, categories, themes,"
+                   "  publication_date, confidentiality, minimum_optimal_scale, maximum_optimal_scale, spatial_level) "
+                   f"VALUES ({schema}, {table}, {title}, {abstract}, {project_number}, {keywords},"
+                   f" {new_categories_array}, {new_themes_array}, {pubdate}, {confidentiality},"
+                   f" {minimum_optimal_scale}, {maximum_optimal_scale}, {spatial_level})")
+            try:
+                connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when inserting metadata record into the database: ') + str(e))
+                return False
+            sql = f"SELECT id FROM pgmetadata.dataset WHERE schema_name = {schema} and table_name = {table}"
+            try:
+                data = connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when querying new metadata record: ') + str(e))
+                return False
+            self.dataset_id = data[0][0]
+        else:
+            sql = (f"UPDATE pgmetadata.dataset SET title = {title}, abstract = {abstract}, project_number = {project_number}, "
+                   f" keywords = {keywords}, categories = {new_categories_array}, themes = {new_themes_array}, "
+                   f" publication_date = {pubdate}, confidentiality = {confidentiality}, "
+                   f" minimum_optimal_scale = {minimum_optimal_scale}, maximum_optimal_scale = {maximum_optimal_scale}, spatial_level = {spatial_level} "
+                   f"WHERE schema_name = {schema} and table_name = {table}")
+            try:
+                connection.executeSql(sql)
+            except QgsProviderConnectionException as e:
+                LOGGER.critical(tr('Error when updating the database: ') + str(e))
+                return False
         
+        self.save_link(self.current_link_id)
+        if not self.links.write_to_db(connection, self.dataset_id):
+            return False
+        if not self.assigned_contacts.write_to_db(connection, self.dataset_id):
+            return False
+            
         return True

@@ -266,6 +266,8 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
         self.edit_layer.setEnabled(False)
         self.current_datasource_uri = None
         self.current_connection = None
+        self.empty_metadata_datasource_uri = None
+        self.empty_metadata_connection = None
 
         if not settings_connections_names():
             self.default_html_content_not_installed()
@@ -339,6 +341,9 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                 tr('The layer {origin} {schema}.{table} is missing metadata.').format(
                     origin=origin, schema=uri.schema(), table=uri.table())
             )
+            self.edit_layer.setEnabled(True)
+            self.empty_metadata_datasource_uri = uri
+            self.empty_metadata_connection = connection
 
     def add_flatten_dataset_table(self):
         """ Add a flatten dataset table with all links and contacts. """
@@ -491,14 +496,29 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
 
     def edit_layer_metadata(self):
         edit_dialog = PgMetadataLayerEditor()
-        updated = edit_dialog.open_editor(self.current_datasource_uri, self.current_connection)
-        LOGGER.debug(f'edit_dialog returned {updated=}')
-        if updated:
-            iface.messageBar().pushSuccess(
-                tr("Edit metadata"),
-                tr("Metadata for layer {} has been edited and successfully stored").format(
-                    self.current_datasource_uri.table()))
-            self.layer_changed(iface.activeLayer())
+        if self.empty_metadata_connection:
+            new = True
+            uri = self.empty_metadata_datasource_uri
+            conn = self.empty_metadata_connection
+        else:
+            new = False
+            uri = self.current_datasource_uri
+            conn = self.current_connection
+        res = edit_dialog.open_editor(uri, conn, new=new)
+        LOGGER.debug(f'edit_dialog for {new=} returned {res=}')
+        if res:
+            if new:
+                msg = tr("Metadata for layer {} have been successfully added")
+            else:
+                msg = tr("Metadata for layer {} have been successfully edited")
+            iface.messageBar().pushSuccess(tr("Edit metadata"), msg.format(uri.table()))
+        else:
+            if new:
+                msg = tr("Adding metadata for layer {} has failed")
+            else:
+                msg = tr("Updating metadata for layer {} has failed")
+            iface.messageBar().pushSuccess(tr("Edit metadata"), msg.format(uri.table()))
+        self.layer_changed(iface.activeLayer())
 
     @staticmethod
     def open_external_help():
