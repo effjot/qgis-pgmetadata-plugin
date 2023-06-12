@@ -81,8 +81,8 @@
        <rect>
         <x>10</x>
         <y>50</y>
-        <width>91</width>
-        <height>16</height>
+        <width>111</width>
+        <height>65</height>
        </rect>
       </property>
       <property name="font">
@@ -92,7 +92,11 @@
        </font>
       </property>
       <property name="text">
-       <string>Zusammenfassung</string>
+       <string>Zusammen-
+fassung</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
       </property>
      </widget>
      <widget class="QLabel" name="label_4">
@@ -615,8 +619,8 @@ Fertigstellung</string>
       <rect>
        <x>110</x>
        <y>10</y>
-       <width>421</width>
-       <height>22</height>
+       <width>411</width>
+       <height>30</height>
       </rect>
      </property>
      <property name="currentText">
@@ -754,10 +758,10 @@ Fertigstellung</string>
     <widget class="QToolButton" name="btn_link_add">
      <property name="geometry">
       <rect>
-       <x>540</x>
+       <x>525</x>
        <y>10</y>
-       <width>22</width>
-       <height>22</height>
+       <width>30</width>
+       <height>30</height>
       </rect>
      </property>
      <property name="font">
@@ -775,10 +779,10 @@ Fertigstellung</string>
     <widget class="QToolButton" name="btn_link_remove">
      <property name="geometry">
       <rect>
-       <x>570</x>
+       <x>560</x>
        <y>10</y>
-       <width>22</width>
-       <height>22</height>
+       <width>30</width>
+       <height>30</height>
       </rect>
      </property>
      <property name="font">

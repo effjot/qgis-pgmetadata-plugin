@@ -394,6 +394,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.buttonBox.accepted.connect(self.dlg_accept)  
 
         self.tab_current_idx: int = self.tabWidget.currentIndex()
+        self.tab_important_idx: int = self.tabWidget.indexOf(self.tab_important_metadata)
         self.tab_links_idx: int = self.tabWidget.indexOf(self.tab_links)
         self.tab_contacts_idx: int = self.tabWidget.indexOf(self.tab_contacts)
 
@@ -558,11 +559,22 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         row = self.table_contacts.rowCount()
         self.table_contacts.insertRow(row)
         self.assignment_set_row(row, new_ass)
-        
+
+    def validate_important_metadata(self):
+        if self.txt_title.toPlainText() and self.txt_abstract.toPlainText():
+            return True
+        self.tabWidget.setCurrentIndex(self.tab_important_idx)
+        QMessageBox.warning(self, 'Unvollständige Metadaten',
+                                'Es müssen mindesten Titel und Zusammenfassung angegeben werden. Bitte ergänzen.')
+        return False
+
     def tab_current_changed(self):
         LOGGER.debug('tab_current_changed()')
         prev_tab_idx = self.tab_current_idx
         self.tab_current_idx = self.tabWidget.currentIndex()
+
+        if prev_tab_idx == self.tab_important_idx:
+            self.validate_important_metadata()
 
         if prev_tab_idx == self.tab_links_idx:  # Changed from the Links tab to another → save currently edited link
             self.save_link(self.current_link_id)
@@ -606,11 +618,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         pass
 
     def dlg_accept(self):
-        """OK-Button bestätigt+schließt nur, wenn aktueller Link gespeichert werden konnte."""
-        #QMessageBox.warning(self, 'gedrückt', 'OK gedrückd')
-        saved = self.save_link(self.current_link_id)
-        if saved:
-            #QMessageBox.warning(self, 'gedrückt2', 'nach OK gedrückt')
+        """OK-Button bestätigt+schließt nur, wenn Minimalangaben vollständig sind und aktueller Link gespeichert werden konnte."""
+        important_validated = self.validate_important_metadata()
+        link_saved = self.save_link(self.current_link_id)
+        if important_validated and link_saved:
             self.accept()
 
     def prepare_editor(self, datasource_uri, connection):

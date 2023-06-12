@@ -308,9 +308,9 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
 
             #FIXME: why loop at all over connections?
             conn_uri = QgsDataSourceUri(connection.uri())
-            LOGGER.debug(f"conn.uri.db: {conn_uri.database()}, layeruri: {uri.database()}")
             if conn_uri.database() == uri.database():
                 conn_found = connection
+                LOGGER.debug(f"conn.uri.db: {conn_uri.database()}, layeruri: {uri.database()}")
             else:
                 continue
 
@@ -320,7 +320,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                 continue
 
             sql = self.sql_for_layer(uri, output_format=OutputFormats.HTML)
-
+            #LOGGER.debug(f'{sql=}')
             try:
                 data = connection.executeSql(sql)
             except QgsProviderConnectionException as e:
@@ -347,7 +347,7 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             origin = uri.database() if uri.database() else uri.service()
             self.set_html_content(
                 tr('Missing metadata'),
-                tr('The layer {origin} {schema}.{table} is missing metadata.').format(
+                tr('The layer {origin}.{schema}.{table} is missing metadata.').format(
                     origin=origin, schema=uri.schema(), table=uri.table())
             )
             self.edit_layer.setEnabled(True)
@@ -523,10 +523,10 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
             iface.messageBar().pushSuccess(tr("Edit metadata"), msg.format(uri.table()))
         else:
             if new:
-                msg = tr("Adding metadata for layer {} has failed")
+                msg = tr("Adding metadata for layer {} failed/cancelled")
             else:
-                msg = tr("Updating metadata for layer {} has failed")
-            iface.messageBar().pushSuccess(tr("Edit metadata"), msg.format(uri.table()))
+                msg = tr("Updating metadata for layer {} failed/cancelled")
+            iface.messageBar().pushCritical(tr("Edit metadata"), msg.format(uri.table()))
         self.layer_changed(iface.activeLayer())
 
     @staticmethod
