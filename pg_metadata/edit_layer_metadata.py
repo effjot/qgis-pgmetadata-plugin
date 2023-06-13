@@ -88,7 +88,7 @@ def dict_reverse_lookup(dictionary: dict, values: list) -> list:
 
 
 def get_glossary(connection, field: str) -> OrderedDict:
-    sql = f"SELECT code, label_de FROM pgmetadata.glossary WHERE field = '{field}' ORDER BY item_order"
+    sql = f"SELECT code, label FROM pgmetadata.v_glossary_translation_de WHERE field = '{field}' ORDER BY item_order"
     try:
         rows = connection.executeSql(sql)
     except QgsProviderConnectionException as e:
@@ -666,12 +666,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.schema = datasource_uri.schema()
         if self.new_metadata_record:
             LOGGER.info(f'New metadata for layer {datasource_uri.table()}, {connection}')
-            data = [[None] * 13]
+            data = [[None] * 16]
         else:
             LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
             sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes,"  # 0 - 6
                    " spatial_level, minimum_optimal_scale, maximum_optimal_scale,"  # 7 - 9
-                   " publication_date, data_last_update, confidentiality, license, license_attribution "  # 10 - 14
+                   " publication_date, data_last_update, publication_frequency,"  # 10 - 12
+                   " confidentiality, license, license_attribution "  # 13 - 15
                    f"FROM pgmetadata.dataset WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
             try:
                 data = connection.executeSql(sql)
@@ -690,41 +691,13 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if data[0][7]: self.txt_spatial_level.setPlainText(data[0][7])
         if data[0][8]: self.lne_minimum_optimal_scale.setText(str(data[0][8]))
         if data[0][9]: self.lne_maximum_optimal_scale.setText(str(data[0][9]))
-        if data[0][9]: self.lne_maximum_optimal_scale.setText(str(data[0][9]))
-        if data[0][14]: self.txt_license_attribution.setPlainText(data[0][14])
+        if data[0][15]: self.txt_license_attribution.setPlainText(data[0][15])
         publ = data[0][10]
         if publ and not (type(publ) == QVariant and publ.isNull()):
             self.set_datetime_publ(publ)
         upd = data[0][11]
         if upd and not (type(upd) == QVariant and upd.isNull()):
             self.set_datetime_upd(upd)
-
-        # get confidentialty value and fill combobox
-        self.cmb_license.clear()
-        self.licenses = get_glossary(connection, 'dataset.license')
-        for code, lic in self.licenses.items():
-            self.cmb_license.addItem(str(lic), code)
-        selected_code = data[0][13]
-        if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
-            #self.cmb_license.setCurrentIndex(self.cmb_license.findData('NO'))
-            self.cmb_license.setCurrentIndex(-1)
-        else:        
-            self.cmb_license.setCurrentIndex(self.cmb_license.findData(selected_code))
-            
-        # get confidentialty value and fill combobox
-        self.cmb_confidentiality.clear()
-        self.cmb_confidentiality2.clear()
-        self.confidentialities = get_glossary(connection, 'dataset.confidentiality')
-        for code, confid in self.confidentialities.items():
-            self.cmb_confidentiality.addItem(confid, code)
-            self.cmb_confidentiality2.addItem(confid, code)
-        selected_code = data[0][12]
-        if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
-            self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
-            self.cmb_confidentiality2.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
-        else:        
-            self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData(selected_code))
-            self.cmb_confidentiality2.setCurrentIndex(self.cmb_confidentiality.findData(selected_code))
         
         # get categories and fill comboBox
         self.cmb_categories.clear()
@@ -753,7 +726,45 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                 if i == theme['code']:
                     selected_themes_values.append(theme['label'])
         self.cmb_themes.setCheckedItems(selected_themes_values)  # set selected themes as checked
-        
+
+        # get publication frequencies and fill combobox
+        self.cmb_freq.clear()
+        self.frequencies = get_glossary(connection, 'dataset.publication_frequency')
+        for code, freq in self.frequencies.items():
+            self.cmb_freq.addItem(freq, code)
+        selected_code = data[0][12]
+        if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
+            self.cmb_freq.setCurrentIndex(self.cmb_freq.findData('UNK'))
+        else:        
+            self.cmb_freq.setCurrentIndex(self.cmb_freq.findData(selected_code))
+            
+        # get license values and fill combobox
+        self.cmb_license.clear()
+        self.licenses = get_glossary(connection, 'dataset.license')
+        for code, lic in self.licenses.items():
+            self.cmb_license.addItem(lic, code)
+        selected_code = data[0][14]
+        if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
+            #self.cmb_license.setCurrentIndex(self.cmb_license.findData('NO'))
+            self.cmb_license.setCurrentIndex(-1)
+        else:        
+            self.cmb_license.setCurrentIndex(self.cmb_license.findData(selected_code))
+            
+        # get confidentialty value and fill combobox
+        self.cmb_confidentiality.clear()
+        self.cmb_confidentiality2.clear()
+        self.confidentialities = get_glossary(connection, 'dataset.confidentiality')
+        for code, confid in self.confidentialities.items():
+            self.cmb_confidentiality.addItem(confid, code)
+            self.cmb_confidentiality2.addItem(confid, code)
+        selected_code = data[0][13]
+        if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
+            self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
+            self.cmb_confidentiality2.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
+        else:        
+            self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData(selected_code))
+            self.cmb_confidentiality2.setCurrentIndex(self.cmb_confidentiality.findData(selected_code))
+
         # get link types and fill comboBox
         self.cmb_link_type.clear()
         link_types = query_to_ordereddict(connection, 'id', ['code', 'label', 'description'], "FROM pgmetadata.v_glossary_translation_de WHERE field='link.type' ORDER BY item_order, code")
