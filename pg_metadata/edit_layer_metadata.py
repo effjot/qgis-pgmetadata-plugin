@@ -22,6 +22,9 @@ from PyQt5.QtCore import (
     QVariant
 )
 from PyQt5.QtWidgets import (
+    QComboBox,
+    QDateEdit,
+    QDateTimeEdit,
     QMessageBox,
     QTableWidgetItem,
     QHeaderView
@@ -363,6 +366,24 @@ class AssignedContacts:
                 return False
         return True
 
+def makefun_widget_sync(this, other):
+    if type(this) in [QDateEdit, QDateTimeEdit] and type(other) in [QDateEdit, QDateTimeEdit]:
+        def sync():
+            LOGGER.info(f'sync date {this.objectName()} -> {other.objectName()}')
+            this_dt = this.dateTime()
+            other_dt = other.dateTime()
+            if this_dt != other_dt:
+                other.setDateTime(this_dt)
+        return sync
+    if type(this) == QComboBox and type(other) == QComboBox:
+        def sync():
+            this_idx = this.currentIndex()
+            other_idx = other.currentIndex()
+            if this_idx != other_idx:
+                other.setCurrentIndex(this_idx)
+        return sync
+    raise NotImplementedError(f"Type {type(this)} not implemented")
+    
 class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
     def __init__(self, parent=None):
         super().__init__()
@@ -373,8 +394,16 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.lne_maximum_optimal_scale.setValidator(validator)
         self.lne_link_size.setValidator(validator)
         self.tabWidget.currentChanged.connect(self.tab_current_changed)
-        self.btn_datetime_now.setIcon(QgsApplication.getThemeIcon('/propertyicons/temporal.svg'))
-        self.btn_datetime_now.clicked.connect(self.set_datetime_publ)
+        self.btn_dat_publ_now.setIcon(QgsApplication.getThemeIcon('/propertyicons/temporal.svg'))
+        self.btn_dat_publ_now.clicked.connect(self.set_datetime_publ)
+        self.btn_datetime_publ_now.setIcon(QgsApplication.getThemeIcon('/propertyicons/temporal.svg'))
+        self.btn_datetime_publ_now.clicked.connect(self.set_datetime_publ)
+        self.dat_publ.dateChanged.connect(makefun_widget_sync(self.dat_publ, self.dattim_publ))
+        self.dattim_publ.dateChanged.connect(makefun_widget_sync(self.dattim_publ, self.dat_publ))
+        self.cmb_confidentiality.currentIndexChanged.connect(makefun_widget_sync(self.cmb_confidentiality, self.cmb_confidentiality2))
+        self.cmb_confidentiality2.currentIndexChanged.connect(makefun_widget_sync(self.cmb_confidentiality2, self.cmb_confidentiality))
+        self.btn_datetime_upd_now.setIcon(QgsApplication.getThemeIcon('/propertyicons/temporal.svg'))
+        self.btn_datetime_upd_now.clicked.connect(self.set_datetime_upd)
         self.cmb_link_select.currentIndexChanged.connect(self.tab_links_update_form)
         self.btn_link_add.setIcon(QgsApplication.getThemeIcon('/symbologyAdd.svg'))
         self.btn_link_add.clicked.connect(self.new_link)
@@ -410,6 +439,14 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             datetime = QDateTime.currentDateTime()
         self.dattim_publ.setDateTime(datetime)
         self.dattim_publ.setEnabled(True)
+        self.dat_publ.setDateTime(datetime)
+        self.dat_publ.setEnabled(True)
+
+    def set_datetime_upd(self, datetime: QDateTime = None):
+        if not datetime:
+            datetime = QDateTime.currentDateTime()
+        self.dattim_upd.setDateTime(datetime)
+        self.dattim_upd.setEnabled(True)
 
     def tab_links_clear_form(self):
         #FIXME: reset_index nötig? Umbenennen in tab_links_clear_form()
@@ -632,10 +669,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             data = [[None] * 13]
         else:
             LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
-            sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes, "  # 0 - 6
-                   "spatial_level, minimum_optimal_scale, maximum_optimal_scale, "  # 7 - 9
-                   "publication_date, data_last_update, confidentiality FROM pgmetadata.dataset "  # 10 - 12
-                   f"WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
+            sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes,"  # 0 - 6
+                   " spatial_level, minimum_optimal_scale, maximum_optimal_scale,"  # 7 - 9
+                   " publication_date, data_last_update, confidentiality, license, license_attribution "  # 10 - 14
+                   f"FROM pgmetadata.dataset WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
             try:
                 data = connection.executeSql(sql)
             except QgsProviderConnectionException as e:
@@ -653,20 +690,41 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         if data[0][7]: self.txt_spatial_level.setPlainText(data[0][7])
         if data[0][8]: self.lne_minimum_optimal_scale.setText(str(data[0][8]))
         if data[0][9]: self.lne_maximum_optimal_scale.setText(str(data[0][9]))
+        if data[0][9]: self.lne_maximum_optimal_scale.setText(str(data[0][9]))
+        if data[0][14]: self.txt_license_attribution.setPlainText(data[0][14])
         publ = data[0][10]
         if publ and not (type(publ) == QVariant and publ.isNull()):
             self.set_datetime_publ(publ)
-        
+        upd = data[0][11]
+        if upd and not (type(upd) == QVariant and upd.isNull()):
+            self.set_datetime_upd(upd)
+
+        # get confidentialty value and fill combobox
+        self.cmb_license.clear()
+        self.licenses = get_glossary(connection, 'dataset.license')
+        for code, lic in self.licenses.items():
+            self.cmb_license.addItem(str(lic), code)
+        selected_code = data[0][13]
+        if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
+            #self.cmb_license.setCurrentIndex(self.cmb_license.findData('NO'))
+            self.cmb_license.setCurrentIndex(-1)
+        else:        
+            self.cmb_license.setCurrentIndex(self.cmb_license.findData(selected_code))
+            
         # get confidentialty value and fill combobox
         self.cmb_confidentiality.clear()
+        self.cmb_confidentiality2.clear()
         self.confidentialities = get_glossary(connection, 'dataset.confidentiality')
         for code, confid in self.confidentialities.items():
             self.cmb_confidentiality.addItem(confid, code)
+            self.cmb_confidentiality2.addItem(confid, code)
         selected_code = data[0][12]
         if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
             self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
+            self.cmb_confidentiality2.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
         else:        
             self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData(selected_code))
+            self.cmb_confidentiality2.setCurrentIndex(self.cmb_confidentiality.findData(selected_code))
         
         # get categories and fill comboBox
         self.cmb_categories.clear()

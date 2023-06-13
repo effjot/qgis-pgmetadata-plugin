@@ -233,7 +233,7 @@ COMMENT ON VIEW pgmetadata.v_export_table IS 'Generate a flat representation of 
 
 -- export_datasets_as_flat_table(text)
 drop function if exists pgmetadata.export_datasets_as_flat_table;
-CREATE FUNCTION pgmetadata.export_datasets_as_flat_table(_locale text) RETURNS TABLE(uid uuid, table_name text, schema_name text, title text, abstract text, categories text, themes text, keywords text, spatial_level text, minimum_optimal_scale text, maximum_optimal_scale text, publication_date timestamp without time zone, publication_frequency text, license text, license_attributen text, project_number text, confidentiality text, feature_count integer, geometry_type text, projection_name text, projection_authid text, spatial_extent text, creation_date timestamp without time zone, update_date timestamp without time zone, data_last_update timestamp without time zone, links text, contacts text)
+CREATE FUNCTION pgmetadata.export_datasets_as_flat_table(_locale text) RETURNS TABLE(uid uuid, table_name text, schema_name text, title text, abstract text, categories text, themes text, keywords text, spatial_level text, minimum_optimal_scale text, maximum_optimal_scale text, publication_date timestamp without time zone, publication_frequency text, license text, license_attribution text, project_number text, confidentiality text, feature_count integer, geometry_type text, projection_name text, projection_authid text, spatial_extent text, creation_date timestamp without time zone, update_date timestamp without time zone, data_last_update timestamp without time zone, links text, contacts text)
     LANGUAGE plpgsql
     AS $$
 DECLARE
