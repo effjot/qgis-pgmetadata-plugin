@@ -13,6 +13,7 @@ from qgis.PyQt.QtWidgets import (
     QInputDialog
 )
 from qgis.core import (
+    NULL,
     QgsApplication,
     QgsProviderConnectionException
 )
@@ -741,19 +742,21 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         # get license values and fill combobox
         self.cmb_license.clear()
         self.licenses = get_glossary(connection, 'dataset.license')
+        self.licenses[NULL] = 'Keine Lizenz'  #TODO: Löschen, sobald Schlüssel in offiziellem Plugin enthalten
         for code, lic in self.licenses.items():
             self.cmb_license.addItem(lic, code)
         selected_code = data[0][14]
         if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
-            #self.cmb_license.setCurrentIndex(self.cmb_license.findData('NO'))
-            self.cmb_license.setCurrentIndex(-1)
+            self.cmb_license.setCurrentIndex(self.cmb_license.findData(NULL))  #TODO: anpassen, sobald Schlüssel in offiziellem Plugin enthalten
         else:        
             self.cmb_license.setCurrentIndex(self.cmb_license.findData(selected_code))
             
         # get confidentialty value and fill combobox
-        self.cmb_confidentiality.clear()
-        self.cmb_confidentiality2.clear()
         self.confidentialities = get_glossary(connection, 'dataset.confidentiality')
+        if 'UNK' not in self.confidentialities:  #TODO: Löschen, sobald Schlüssel in offiziellem Plugin enthalten
+            self.confidentialities['UNK'] = 'Unbekannt'
+        self.cmb_confidentiality.clear()
+        self.cmb_confidentiality2.clear()        
         for code, confid in self.confidentialities.items():
             self.cmb_confidentiality.addItem(confid, code)
             self.cmb_confidentiality2.addItem(confid, code)
@@ -797,7 +800,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             LOGGER.debug(f'open_editor(): {self.current_link_id=}')
         self.tab_links_update_form()
         
-        # set up contacts tab and creator quick add form
+        # set up contacts tab and creator “quick-add” form
         self.available_contacts.read_from_db(connection)
         self.roles = get_glossary(connection, 'contact.contact_role')
         self.assigned_contacts.read_from_db(connection, self.dataset_id)
@@ -839,7 +842,14 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
             pubdate = "'" + self.dattim_publ.dateTime().toString(Qt.ISODate) + "'"
         else:
             pubdate = 'NULL'
+        if self.dattim_upd.isEnabled():
+            upddate = "'" + self.dattim_upd.dateTime().toString(Qt.ISODate) + "'"
+        else:
+            upddate = 'NULL'
+        freq = sql_quote_or_null(self.cmb_freq.currentData())
         confidentiality = sql_quote_or_null(self.cmb_confidentiality.currentData())
+        license = sql_quote_or_null(self.cmb_license.currentData())
+        license_attribution = sql_quote_or_null(self.txt_license_attribution.toPlainText())
         spatial_level = sql_quote_or_null(self.txt_spatial_level.toPlainText())
         minimum_optimal_scale = sql_quote_or_null(self.lne_minimum_optimal_scale.text(), as_number=True)
         maximum_optimal_scale = sql_quote_or_null(self.lne_maximum_optimal_scale.text(), as_number=True)
@@ -857,9 +867,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         
         if self.new_metadata_record:
             sql = ("INSERT INTO pgmetadata.dataset (schema_name, table_name, title, abstract, project_number, keywords, categories, themes,"
-                   "  publication_date, confidentiality, minimum_optimal_scale, maximum_optimal_scale, spatial_level) "
+                   " publication_date, data_last_update, publication_frequency, confidentiality, license, license_attribution,"
+                   " minimum_optimal_scale, maximum_optimal_scale, spatial_level) "
                    f"VALUES ({schema}, {table}, {title}, {abstract}, {project_number}, {keywords},"
-                   f" {new_categories_array}, {new_themes_array}, {pubdate}, {confidentiality},"
+                   f" {new_categories_array}, {new_themes_array}, {pubdate}, {upddate}, {freq}, {confidentiality}, {license}, {license_attribution},"
                    f" {minimum_optimal_scale}, {maximum_optimal_scale}, {spatial_level})")
             try:
                 connection.executeSql(sql)
@@ -874,9 +885,10 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                 return False
             self.dataset_id = data[0][0]
         else:
-            sql = (f"UPDATE pgmetadata.dataset SET title = {title}, abstract = {abstract}, project_number = {project_number}, "
-                   f" keywords = {keywords}, categories = {new_categories_array}, themes = {new_themes_array}, "
-                   f" publication_date = {pubdate}, confidentiality = {confidentiality}, "
+            sql = (f"UPDATE pgmetadata.dataset SET title = {title}, abstract = {abstract}, project_number = {project_number},"
+                   f" keywords = {keywords}, categories = {new_categories_array}, themes = {new_themes_array},"
+                   f" publication_date = {pubdate}, data_last_update = {upddate}, publication_frequency = {freq},"
+                   f" confidentiality = {confidentiality}, license = {license}, license_attribution = {license_attribution},"
                    f" minimum_optimal_scale = {minimum_optimal_scale}, maximum_optimal_scale = {maximum_optimal_scale}, spatial_level = {spatial_level} "
                    f"WHERE schema_name = {schema} and table_name = {table}")
             try:

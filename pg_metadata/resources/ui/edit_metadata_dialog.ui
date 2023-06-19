@@ -260,7 +260,10 @@ fassung</string>
        </rect>
       </property>
       <property name="text">
-       <string>GCI-Ersteller</string>
+       <string>neuen GCI-Ersteller hinzufügen</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
       </property>
      </widget>
      <widget class="QComboBox" name="cmb_creator">
@@ -311,14 +314,17 @@ Fertigstellung</string>
      <widget class="QLabel" name="label_23">
       <property name="geometry">
        <rect>
-        <x>359</x>
+        <x>335</x>
         <y>300</y>
-        <width>71</width>
+        <width>100</width>
         <height>30</height>
        </rect>
       </property>
       <property name="text">
        <string>Vertraulichkeit</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
      </widget>
      <widget class="QComboBox" name="cmb_confidentiality">
