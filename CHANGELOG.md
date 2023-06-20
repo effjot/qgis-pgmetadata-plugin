@@ -4,9 +4,10 @@
 
 ## 1.2.3-gci3 - 2023-06-20
 * Turn off message bars and dialogs for invalid connections (quietly removing them)
+* Moved less important items from first to second tab of Metadata Editor
 
 ## 1.2.3-gci2 - 2023-06-10
-* Metadata editor added to dock
+* Metadata Editor added to dock
 * Include project number in locator search
 
 ## 1.2.3-gci1 - 2023-06-08

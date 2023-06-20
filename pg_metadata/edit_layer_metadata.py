@@ -300,7 +300,7 @@ class AssignedContacts:
     def read_from_db(self, connection, dataset_id: int, sort_key='contact_role, id'):
         self.clear()
         if not dataset_id:
-            self.assignments = OrderedDict()
+            self.assignments.clear()
             return
         self.assignments = query_to_ordereddict(
             connection, 'id', ['contact_role', 'fk_id_contact', 'fk_id_dataset'],
@@ -312,7 +312,7 @@ class AssignedContacts:
         return self.assignments[assignment_id]
 
     def get_all(self):
-        return self.assignments.values()
+        return self.assignments.values()        
 
     def new(self):
         """Create new contact assignment with empty data and mark for database insert"""
@@ -667,7 +667,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.schema = datasource_uri.schema()
         if self.new_metadata_record:
             LOGGER.info(f'New metadata for layer {self.table}, {connection}')
-            meta = [self.table, * [None]*15]
+            meta = [None, self.table, * [None]*14]
         else:
             LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
             sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes,"  # 0 - 6
