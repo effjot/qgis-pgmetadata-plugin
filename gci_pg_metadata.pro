@@ -1,3 +1,6 @@
+CODECFORTR = UTF-8
+CODECFORSRC = UTF-8
+
 SOURCES=D:\src\qgis\qgis-pgmetadata-plugin\pg_metadata\pg_metadata.py \
     D:\src\qgis\qgis-pgmetadata-plugin\pg_metadata\tools.py \
     D:\src\qgis\qgis-pgmetadata-plugin\pg_metadata\locator.py \

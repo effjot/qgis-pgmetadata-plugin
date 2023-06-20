@@ -139,7 +139,7 @@
         <translation>{n_invalid} ungültige Verbindung(en) entfernt.</translation>
     </message>
     <message>
-        <location filename="../pg_metadata/pg_metadata.py" line="113"/>
+        <location filename="../pg_metadata/pg_metadata.py" line="114"/>
         <source>Keeping {n_invalid} invalid connections.</source>
         <translation>{n_invalid} ungültige Verbindung(en) behalten.</translation>
     </message>
@@ -542,6 +542,16 @@
         <location filename="../pg_metadata/dock.py" line="528"/>
         <source>Updating metadata for layer {} failed/cancelled</source>
         <translation type="obsolete">Ändern der Metadaten für Layer {} ist fehlgeschlagen / wurde abgebrochen</translation>
+    </message>
+    <message>
+        <location filename="../pg_metadata/connection_manager.py" line="161"/>
+        <source>QgsProviderConnectionException when looking for connection {name}.</source>
+        <translation>QgsProviderConnectionException bei der Suche nach Verbindung „{name}“.</translation>
+    </message>
+    <message>
+        <location filename="../pg_metadata/connection_manager.py" line="169"/>
+        <source>Unknown database connection {name} in PgMetadata settings.</source>
+        <translation>Unbekannte Datenbankverbindung „{name}“ in den PgMetadata-Einstellungen.</translation>
     </message>
 </context>
 <context>
