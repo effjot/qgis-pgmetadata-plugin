@@ -98,8 +98,8 @@ class PgMetadata:
         msg.setIcon(QMessageBox.Warning)
         msg.setWindowTitle(tr('PgMetadata: Database connection(s) not available'))
         msg.setText(tr(
-            f'{n_invalid} connection(s) listed in PgMetadata’s settings are invalid or '
-            f'no longer available: {invalid_text}'))
+            '{n_invalid} connection(s) listed in PgMetadata’s settings are invalid or '
+            'no longer available: {invalid_text}').format(n_invalid=n_invalid, invalid_text=invalid_text))
         msg.setInformativeText(tr(
             'Do you want to remove these connection(s) from the PgMetadata settings? '
             '(You can also do this later with the “Set Connections” tool.)'))
@@ -107,10 +107,11 @@ class PgMetadata:
         clicked = msg.exec()
 
         if clicked == QMessageBox.Yes:
-            iface.messageBar().pushSuccess('PgMetadata', tr(f'{n_invalid} invalid connection(s) removed.'))
+            iface.messageBar().pushSuccess('PgMetadata',
+                                           tr('{n_invalid} invalid connection(s) removed.').format(n_invalid=n_invalid))
             store_connections(valid)
         if clicked == QMessageBox.No:
-            iface.messageBar().pushInfo('PgMetadata', tr(f'Keeping {n_invalid} invalid connections.'))
+            iface.messageBar().pushInfo('PgMetadata', tr('Keeping {n_invalid} invalid connections.').format(n_invalid=n_invalid))
 
     @staticmethod
     def open_help():

@@ -158,7 +158,7 @@ def connections_list() -> Tuple[List[str], Union[str, None]]:
         except QgsProviderConnectionException:
             # Todo, we must log something
             # TODO suggestion:
-            mess = f'QgsProviderConnectionException when looking for connection {name}.'
+            mess = tr('QgsProviderConnectionException when looking for connection {name}.').format(name=name)
             iface.messageBar().pushMessage(mess, level=Qgis.Critical)
             # FIXME: show message bar here or just return message to higher level?
             messages.append(mess)
@@ -166,7 +166,7 @@ def connections_list() -> Tuple[List[str], Union[str, None]]:
             if connection:
                 connections.append(name)
             else:
-                mess = f'Unknown database connection {name} in PgMetadata settings.'
+                mess = tr('Unknown database connection {name} in PgMetadata settings.').format(name=name)
                 iface.messageBar().pushMessage(mess, level=Qgis.Warning)
                 # FIXME: show message bar here or just return message to higher level?
                 messages.append(mess)
