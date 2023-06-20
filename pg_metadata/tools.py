@@ -9,6 +9,9 @@ from qgis.PyQt.QtGui import QIcon
 from pg_metadata.qgis_plugin_tools.tools.resources import resources_path
 
 
+FIX_INVALID_CONNECTIONS_QUIETLY = True  # Do not show message bars and dialogs for invalid DB connections
+
+
 def icon_for_geometry_type(geometry_type: str) -> QIcon():
     """ Return the correct icon according to the geometry type. """
     if geometry_type == NULL:

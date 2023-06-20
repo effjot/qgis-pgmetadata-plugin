@@ -22,6 +22,7 @@ from pg_metadata.qgis_plugin_tools.tools.resources import (
     plugin_path,
     resources_path,
 )
+from pg_metadata.tools import FIX_INVALID_CONNECTIONS_QUIETLY
 
 
 class PgMetadata:
@@ -93,6 +94,10 @@ class PgMetadata:
         if n_invalid == 0:
             return
 
+        if FIX_INVALID_CONNECTIONS_QUIETLY:
+            store_connections(valid)
+            return
+        
         invalid_text = ', '.join(invalid)
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
@@ -107,9 +112,9 @@ class PgMetadata:
         clicked = msg.exec()
 
         if clicked == QMessageBox.Yes:
+            store_connections(valid)
             iface.messageBar().pushSuccess('PgMetadata',
                                            tr('{n_invalid} invalid connection(s) removed.').format(n_invalid=n_invalid))
-            store_connections(valid)
         if clicked == QMessageBox.No:
             iface.messageBar().pushInfo('PgMetadata', tr('Keeping {n_invalid} invalid connections.').format(n_invalid=n_invalid))
 

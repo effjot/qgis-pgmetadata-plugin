@@ -15,6 +15,7 @@ from qgis.core import (
 )
 from qgis.utils import iface
 
+from pg_metadata.tools import FIX_INVALID_CONNECTIONS_QUIETLY
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 
 LOGGER = logging.getLogger('pg_metadata')
@@ -128,9 +129,11 @@ def validate_connections_names() -> Tuple[List[str], List[str]]:
     return valid, invalid
 
 
-def connections_list() -> Tuple[List[str], Union[str, None]]:
+def connections_list(quiet: bool = FIX_INVALID_CONNECTIONS_QUIETLY) -> Tuple[List[str], Union[str, None]]:
     """ List of available connections to PostgreSQL database.
 
+    With quiet = True, don’t show warning message bars for invalid connections.
+    
     Returns a tuple:
         * list of connection names
         * string with all connection error messages, if any
@@ -167,7 +170,8 @@ def connections_list() -> Tuple[List[str], Union[str, None]]:
                 connections.append(name)
             else:
                 mess = tr('Unknown database connection {name} in PgMetadata settings.').format(name=name)
-                iface.messageBar().pushMessage(mess, level=Qgis.Warning)
+                if not quiet:
+                    iface.messageBar().pushMessage(mess, level=Qgis.Warning)
                 # FIXME: show message bar here or just return message to higher level?
                 messages.append(mess)
     if messages:

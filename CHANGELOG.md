@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 1.2.3-gci3 - 2023-06-20
+* Turn off message bars and dialogs for invalid connections (quietly removing them)
+
 ## 1.2.3-gci2 - 2023-06-10
 * Metadata editor added to dock
 * Include project number in locator search
