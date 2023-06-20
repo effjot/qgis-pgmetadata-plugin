@@ -666,8 +666,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.table = datasource_uri.table()
         self.schema = datasource_uri.schema()
         if self.new_metadata_record:
-            LOGGER.info(f'New metadata for layer {datasource_uri.table()}, {connection}')
-            data = [[None] * 16]
+            LOGGER.info(f'New metadata for layer {self.table}, {connection}')
+            meta = [self.table, * [None]*15]
         else:
             LOGGER.info(f'Edit metadata for layer {datasource_uri.table()}, {connection}')
             sql = ("SELECT id, title, abstract, project_number, categories, keywords, themes,"  # 0 - 6
@@ -677,26 +677,27 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
                    f"FROM pgmetadata.dataset WHERE schema_name = '{self.schema}' and table_name = '{self.table}'")
             try:
                 data = connection.executeSql(sql)
+                meta = data[0]
             except QgsProviderConnectionException as e:
                 LOGGER.critical(tr('Error when querying the database: ') + str(e))
                 return False
         
         # primary/foreign key for currently edited layer metadata
-        self.dataset_id = data[0][0]
+        self.dataset_id = meta[0]
         
         # fill simple fields
-        if data[0][1]: self.txt_title.setPlainText(data[0][1])
-        if data[0][2]: self.txt_abstract.setPlainText(data[0][2])
-        if data[0][3]: self.txt_project_number.setPlainText(data[0][3])
-        if data[0][5]: self.txt_keywords.setPlainText(str(data[0][5]))
-        if data[0][7]: self.txt_spatial_level.setPlainText(data[0][7])
-        if data[0][8]: self.lne_minimum_optimal_scale.setText(str(data[0][8]))
-        if data[0][9]: self.lne_maximum_optimal_scale.setText(str(data[0][9]))
-        if data[0][15]: self.txt_license_attribution.setPlainText(data[0][15])
-        publ = data[0][10]
+        if meta[1]: self.txt_title.setPlainText(meta[1])
+        if meta[2]: self.txt_abstract.setPlainText(meta[2])
+        if meta[3]: self.txt_project_number.setPlainText(meta[3])
+        if meta[5]: self.txt_keywords.setPlainText(str(meta[5]))
+        if meta[7]: self.txt_spatial_level.setPlainText(meta[7])
+        if meta[8]: self.lne_minimum_optimal_scale.setText(str(meta[8]))
+        if meta[9]: self.lne_maximum_optimal_scale.setText(str(meta[9]))
+        if meta[15]: self.txt_license_attribution.setPlainText(meta[15])
+        publ = meta[10]
         if publ and not (type(publ) == QVariant and publ.isNull()):
             self.set_datetime_publ(publ)
-        upd = data[0][11]
+        upd = meta[11]
         if upd and not (type(upd) == QVariant and upd.isNull()):
             self.set_datetime_upd(upd)
         
@@ -704,8 +705,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.cmb_categories.clear()
         self.categories = get_glossary(connection, 'dataset.categories')
         self.cmb_categories.addItems(self.categories.values())  # fill comboBox with categories
-        if data[0][4]:
-            selected_categories_keys = postgres_array_to_list(data[0][4])
+        if meta[4]:
+            selected_categories_keys = postgres_array_to_list(meta[4])
         else:
             selected_categories_keys = []
         selected_categories_values = []
@@ -716,8 +717,8 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         # get themes and fill comboBox
         self.cmb_themes.clear()
         self.themes = query_to_ordereddict(connection, 'id', ['code', 'label'], "FROM pgmetadata.theme ORDER BY label")
-        if data[0][6]:
-            selected_themes_keys = postgres_array_to_list(data[0][6])
+        if meta[6]:
+            selected_themes_keys = postgres_array_to_list(meta[6])
         else:
             selected_themes_keys = []
         selected_themes_values = []
@@ -733,7 +734,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.frequencies = get_glossary(connection, 'dataset.publication_frequency')
         for code, freq in self.frequencies.items():
             self.cmb_freq.addItem(freq, code)
-        selected_code = data[0][12]
+        selected_code = meta[12]
         if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
             self.cmb_freq.setCurrentIndex(self.cmb_freq.findData('UNK'))
         else:        
@@ -745,7 +746,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         self.licenses[NULL] = 'Keine Lizenz'  #TODO: Löschen, sobald Schlüssel in offiziellem Plugin enthalten
         for code, lic in self.licenses.items():
             self.cmb_license.addItem(lic, code)
-        selected_code = data[0][14]
+        selected_code = meta[14]
         if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
             self.cmb_license.setCurrentIndex(self.cmb_license.findData(NULL))  #TODO: anpassen, sobald Schlüssel in offiziellem Plugin enthalten
         else:        
@@ -760,7 +761,7 @@ class PgMetadataLayerEditor(QDialog, EDITDIALOG_CLASS):
         for code, confid in self.confidentialities.items():
             self.cmb_confidentiality.addItem(confid, code)
             self.cmb_confidentiality2.addItem(confid, code)
-        selected_code = data[0][13]
+        selected_code = meta[13]
         if not selected_code or (type(selected_code) == QVariant and selected_code.isNull()):
             self.cmb_confidentiality.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
             self.cmb_confidentiality2.setCurrentIndex(self.cmb_confidentiality.findData('UNK'))
