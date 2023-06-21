@@ -247,7 +247,7 @@ class AvailableContacts:
         self.contacts.clear()
         self.organisation_members.clear()
 
-    def read_from_db(self, connection, sort_key='organisation_name, organisation_unit, name'):
+    def read_from_db(self, connection, sort_key='organisation_name, name'):
         self.clear()
         self.contacts = query_to_ordereddict(
             connection, 'id',
