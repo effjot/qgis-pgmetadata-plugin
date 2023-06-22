@@ -47,6 +47,10 @@ from pg_metadata.connection_manager import (
     connections_list,
     settings_connections_names,
 )
+from pg_metadata.tools import (
+    add_group,
+    add_layer
+)
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
 from pg_metadata.qgis_plugin_tools.tools.resources import (
     load_ui,
@@ -456,50 +460,12 @@ class PgMetadataDock(QDockWidget, DOCK_CLASS):
                                            level=Qgis.Warning)
             return
         
-        root = QgsProject.instance().layerTreeRoot()
-        theme_group = root.addGroup(tr("Theme {}").format(theme))
+        theme_group = add_group(tr("Theme {}").format(theme))
                 
         for layer in layers:
-                        
-            # code for getting layer adapted from locator.py
+            add_layer(connection, schema_name=layer[0], table_name=layer[1],
+                      geometry_type=layer[2], title=layer[3], group=theme_group)
 
-            schema_name = layer[0]
-            table_name = layer[1]
-            geometry_type = layer[2]
-            title = layer[3]
-            QgsMessageLog.logMessage(f'Adding layer "{schema_name}"."{table_name}"',
-                                     'PgMetadata', level=Qgis.Info)
-            
-            if Qgis.QGIS_VERSION_INT < 31200:
-                table = [t for t in connection.tables(schema_name) if t.tableName() == table_name][0]
-            else:
-                table = connection.table(schema_name, table_name)
-    
-            uri = QgsDataSourceUri(connection.uri())
-            uri.setSchema(schema_name)
-            uri.setTable(table_name)
-            uri.setGeometryColumn(table.geometryColumn())
-            pk = table.primaryKeyColumns()
-            if pk:
-                uri.setKeyColumn(pk[0])
-
-            if geometry_type != 'RASTER':
-                geom_types = table.geometryColumnTypes()
-                if geom_types:
-                    # Take the first one
-                    uri.setWkbType(geom_types[0].wkbType)
-                # TODO, we should try table.crsList() and uri.setSrid()
-                
-                maplayer = QgsVectorLayer(uri.uri(), title, 'postgres')
-                # Maybe there is a default style, you should load it
-                maplayer.loadDefaultStyle()
-            else:
-                maplayer = QgsRasterLayer(uri.uri(), title, 'postgresraster')
-                # NOTE: raster styles cannot be stored in database yet
-
-            QgsProject.instance().addMapLayer(maplayer, False)
-            theme_group.addLayer(maplayer)
-            
         iface.messageBar().pushMessage(tr("{n} layers from theme “{theme}” added").format(n=len(layers),
                                                                                           theme=theme),
                                        level=Qgis.Info)

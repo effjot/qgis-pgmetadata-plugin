@@ -22,7 +22,10 @@ from pg_metadata.connection_manager import (
     connections_list,
 )
 from pg_metadata.qgis_plugin_tools.tools.i18n import tr
-from pg_metadata.tools import icon_for_geometry_type
+from pg_metadata.tools import (
+    add_layer,
+    icon_for_geometry_type
+)
 
 SCHEMA = 'pgmetadata'
 
@@ -114,41 +117,8 @@ class LocatorFilter(QgsLocatorFilter):
         metadata = QgsProviderRegistry.instance().providerMetadata('postgres')
         connection = metadata.findConnection(result.userData['connection'])
 
-        schema_name = result.userData['schema']
-        table_name = result.userData['table']
-
-        table = connection.table(schema_name, table_name)
-
-        uri = QgsDataSourceUri(connection.uri())
-        uri.setSchema(schema_name)
-        uri.setTable(table_name)
-        uri.setGeometryColumn(table.geometryColumn())
-        geom_types = table.geometryColumnTypes()
-        if geom_types:
-            # Take the first one
-            uri.setWkbType(geom_types[0].wkbType)
-        # TODO, we should try table.crsList() and uri.setSrid()
-        pk = table.primaryKeyColumns()
-        if pk:
-            uri.setKeyColumn(pk[0])
-
-        if result.userData['geometry_type'] != 'RASTER':
-            # FIXME: why copied from above?
-            geom_types = table.geometryColumnTypes()
-            if geom_types:
-                # Take the first one
-                uri.setWkbType(geom_types[0].wkbType)
-            # TODO, we should try table.crsList() and uri.setSrid()
-
-            layer = QgsVectorLayer(uri.uri(), result.userData['name'], 'postgres')
-            # Maybe there is a default style, you should load it
-            layer.loadDefaultStyle()
-
-        else:
-            layer = QgsRasterLayer(uri.uri(), result.userData['name'], 'postgresraster')
-            # NOTE: raster styles cannot be stored in database yet
-
-        QgsProject.instance().addMapLayer(layer)
+        add_layer(connection, result.userData['schema'], result.userData['table'],
+                  result.userData['geometry_type'], result.userData['name'])
 
         auto_open_dock = QgsSettings().value("pgmetadata/auto_open_dock", True, type=bool)
         if auto_open_dock:
